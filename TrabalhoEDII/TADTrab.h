@@ -9,14 +9,71 @@ struct TpLista {
 	TpCode *tokens;
 }; typedef struct TpLista TpLista;
 
-void CriaL (TpLista **nova){
+union TpInfo {
+    float valor;
+    char operacao[3];
+    char funcao[20];
+};
+
+struct listagen {
+    char terminal;
+    union TpInfo info;
+    struct listagen *cabeca, *cauda;
+}; typedef struct listagen ListaGen;
+
+struct TpTermo {
+	char termo[15];
+	struct TpTermo *prox;
+}; typedef struct TpTermo TpTermo;
+
+struct Pilha {
+	ListaGen *info;
+	struct Pilha *prox;
+}; typedef struct Pilha Pilha;
+
+
+//---------------TAD PILHA---------------------
+
+void init(Pilha **p) {
+	*p = NULL;
+}
+
+void push(Pilha **p, ListaGen *info) {
+	Pilha *novo = (Pilha*)malloc(sizeof(Pilha));
+	novo->info = info;
+	novo->prox = *p;
+	*p = novo;
+}
+
+void pop(Pilha **p, ListaGen **info) {
+	Pilha *aux = *p;
+	*info = aux->info;
+	*p = aux->prox;
+	free(aux);
+}
+
+char isEmpty(Pilha *p) {
+	return p == NULL;
+}
+
+//----------------------------------------------
+
+ListaGen *CriaNo(char termo) {
+	ListaGen *novo;
+	novo = (ListaGen*)malloc(sizeof(ListaGen));
+	novo->termo = termo;
+	novo->cabeca = novo->cauda = NULL;
+	return novo;
+}
+
+void CriaL (TpLista **nova) {
 	*nova = (TpLista*)malloc(sizeof(TpLista));
 	(*nova)->ant = NULL;
 	(*nova)->prox = NULL;
 	(*nova)->tokens = NULL;
 }
 
-void InsereL(TpLista **pProgram){
+void InsereL(TpLista **pProgram) {
 	TpLista *aux, *nova;
 	CriaL(&nova);
 	if(*pProgram == NULL)
@@ -34,13 +91,13 @@ void InsereL(TpLista **pProgram){
 	}
 }
 
-void CriaT (TpCode **nova,char token[15]){
+void CriaT (TpCode **nova,char token[15]) {
 	*nova = (TpCode*)malloc(sizeof(TpCode));
 	strcpy((*nova)->token, token);
 	(*nova)->prox = NULL;
 }
 
-void InsereT(TpLista **pProgram, TpCode *nova){
+void InsereT(TpLista **pProgram, TpCode *nova) {
 	TpLista *auxL = *pProgram;
 	TpCode *aux;
 	
@@ -59,7 +116,7 @@ void InsereT(TpLista **pProgram, TpCode *nova){
 	}
 }
 
-char VerifaVazia(TpLista *pProgram){
+char VerifaVazia(TpLista *pProgram) {
 	TpLista *aux = pProgram;
 	while(aux->prox != NULL)
 		aux = aux->prox;
@@ -71,7 +128,7 @@ char VerifaVazia(TpLista *pProgram){
 		return 0;
 }
 
-void exibe(TpLista *pProgram){
+void exibe(TpLista *pProgram) {
 	TpLista *aux = pProgram;
 	TpCode *auxT;
 
@@ -88,7 +145,7 @@ void exibe(TpLista *pProgram){
 	}
 }
 
-void CarregaL(TpLista **pProgram){
+void CarregaL(TpLista **pProgram) {
 	FILE *arq;
 	int i, j;
 	char token[15], nome[15], auxS[50];
@@ -121,3 +178,72 @@ void CarregaL(TpLista **pProgram){
 	}
 	fclose(arq);
 }
+
+//Funcao ListaGen para resolver expressoes aritmeticas
+
+float resolve(char equacao[100]) {
+    float result;
+    
+    //construir a ListaGen com todas a expressao aritmetica
+    Pilha *p;
+    ListaGen *L = NULL, *atual;
+    Fila *f;
+
+    TpTermo *lista = separa(equacao);
+    
+    init(&p);
+    init(&f);
+
+    while(lista != NULL) {
+        if(L == NULL)
+            L = atual = CriaNo(lista->termo);
+
+        else 
+            if(strcmp(lista->termo, "(") == 0) {
+                atual->cauda = CriaNo("0");
+                atual = atual->cauda;
+                lista = lista->prox;
+                push(&p, atual);
+
+                atual->cabeca = CriaNo(lista->termo);
+                atual = atual->prox;
+            }
+            else
+                if(strcmp(lista->termo,")") == 0)
+                    pop(&p, &atual);
+
+                else {
+                    atual->cauda = CriaNo(lista->termo);
+                    atual = atual->prox;
+                }
+        lista = lista->prox;
+    }
+
+    //resolvendo a expressao
+    push(&p, L);
+    enqueue(&f, L);
+    
+    while(!isEmpty(F)) {
+        dequeue(&f, &atual);
+        
+        while(!Nula(atual)) {
+            if(atual->cabeca != NULL) {
+                push(&p, atual->cabeca);
+                enqueue(&f, atual->cabeca);
+            }   
+            atual = atual->cauda;
+        }
+    }
+
+    while(!isEmpty(P)) {
+        pop(&p, &atual);
+        if(atual != L)
+            atual->info.valor = calcula(atual->cabeca);
+
+        else 
+            result = calcula(atual);
+    }
+    return result;
+}
+
+
