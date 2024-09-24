@@ -31,6 +31,10 @@ struct Pilha {
 	struct Pilha *prox;
 }; typedef struct Pilha Pilha;
 
+struct Fila{
+	ListaGen *info;
+	struct Pilha *prox;
+}; typedef struct Fila Fila;
 
 //---------------TAD PILHA---------------------
 
@@ -56,15 +60,81 @@ char isEmpty(Pilha *p) {
 	return p == NULL;
 }
 
+//----------------TAD FILA---------------------
+
+void initF(Fila **f) {
+	*f = NULL;
+}
+
+void enqueue(Fila **f, ListaGen *info){
+	Fila *novo = *f;
+	if (*f == NULL) {
+    // A fila esta vazia, inicializa o primeiro no
+    *f=(Fila*)malloc(sizeof(Fila));
+    (*f)->prox=NULL;
+    (*f)->info=info;
+	} else {
+	    while (novo->prox != NULL) {
+	        novo = novo->prox;
+	    }
+	    novo->prox = (Fila*)malloc(sizeof(Fila));
+	    novo->prox->info = info;
+	    novo->prox->prox = NULL;
+	}
+}
+
+void dequeue (Fila **f, ListaGen **info){
+	Fila *aux= *f;
+	*info = aux->info;
+	*f = aux->prox;
+	free(aux);
+}
+
+void IsEmptyF(Fila *f){
+	return f==NULL;
+}
+
 //----------------------------------------------
 
-ListaGen *CriaNo(char termo) {
-	ListaGen *novo;
-	novo = (ListaGen*)malloc(sizeof(ListaGen));
-	novo->termo = termo;
-	novo->cabeca = novo->cauda = NULL;
-	return novo;
+int isNumber(char termo[]) {
+    for (int i = 0; termo[i] != '\0'; i++) {
+        if (!isdigit(termo[i]) && termo[i] != '.') {
+            return 0;
+        }
+    }
+    return 1;
 }
+
+int isOperation(char termo[]) {
+    return (strcmp(termo, "+") == 0 || strcmp(termo, "-") == 0 || 
+            strcmp(termo, "*") == 0 || strcmp(termo, "/") == 0 || 
+			strcmp(termo, "//") == 0 || strcmp(termo, "**") == 0 ||
+			strcmp(termo, "%") == 0);
+}
+
+int isFunction(char termo[]) {
+    return (strcmp(termo, "math.sqrt") == 0 || strcmp(termo, "math.fabs") == 0)
+}
+
+ListaGen *CriaNo(char termo[]) {
+    ListaGen *novo = (ListaGen*)malloc(sizeof(ListaGen));
+    novo->cabeca = novo->cauda = NULL;
+
+    if (isNumber(termo)) {
+        novo->terminal = 'V';
+        novo->info.valor = atof(termo);
+    }
+	if (isOperation(termo)) {
+        novo->terminal = 'O';
+        strcpy(novo->info.operacao, termo);
+    } 
+	if (isFunction(termo)) {
+        novo->terminal = 'F';
+        strcpy(novo->info.funcao, termo);
+    } 
+    return novo;
+}
+
 
 void CriaL (TpLista **nova) {
 	*nova = (TpLista*)malloc(sizeof(TpLista));
@@ -192,13 +262,13 @@ float resolve(char equacao[100]) {
     TpTermo *lista = separa(equacao);
     
     init(&p);
-    init(&f);
+    initF(&f);
 
     while(lista != NULL) {
         if(L == NULL)
             L = atual = CriaNo(lista->termo);
 
-        else 
+        else {
             if(strcmp(lista->termo, "(") == 0) {
                 atual->cauda = CriaNo("0");
                 atual = atual->cauda;
@@ -206,7 +276,7 @@ float resolve(char equacao[100]) {
                 push(&p, atual);
 
                 atual->cabeca = CriaNo(lista->termo);
-                atual = atual->prox;
+                atual = atual->cabeca;
             }
             else
                 if(strcmp(lista->termo,")") == 0)
@@ -214,8 +284,9 @@ float resolve(char equacao[100]) {
 
                 else {
                     atual->cauda = CriaNo(lista->termo);
-                    atual = atual->prox;
+                    atual = atual->cabeca;
                 }
+		}
         lista = lista->prox;
     }
 
@@ -245,5 +316,3 @@ float resolve(char equacao[100]) {
     }
     return result;
 }
-
-
