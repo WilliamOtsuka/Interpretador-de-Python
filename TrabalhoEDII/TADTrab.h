@@ -36,11 +36,20 @@ struct Fila {
 	struct Fila *prox;
 }; typedef struct Fila Fila;
 
-struct PilhaMem {
-	int valor;
-	
-	struct PilhaMEm *topo;
-}
+union TpIdentificador
+{
+	char variavel[10];
+	struct PilhaM *ponteiro;
+};
+
+struct PilhaMemoria {
+	char terminal;
+	union TpIdentificador ident;
+	char valor[10];
+	TpLista *ponteiro;
+	struct PilhaMemoria *prox;
+}; typedef struct PilhaMemoria PilhaM;
+
 
 //---------------TAD PILHA---------------------
 
@@ -63,6 +72,26 @@ void pop(Pilha **p, ListaGen **info) {
 }
 
 char isEmpty(Pilha *p) {
+	return p == NULL;
+}
+
+//-------------TAD PILHA MEMORIA----------------
+void initM(PilhaM **p) {
+	*p = NULL;
+}
+
+void pushM(PilhaM **p, char *variavel, char *valor, PilhaM *ponteiro) {
+	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
+
+	novo->terminal = 'V';
+	strcpy(novo->ident.variavel, variavel);
+	strcpy(novo->valor, valor);
+	novo->ponteiro = ponteiro;
+	novo->prox = *p;
+	*p = novo;
+}
+
+char isEmptyM(PilhaM *p) {
 	return p == NULL;
 }
 
@@ -103,14 +132,13 @@ char IsEmptyF(Fila *f){
 }
 
 //----------------------------------------------
-
 int isNumber(char termo[]) {
-	int i;
-    for (i = 0; termo[i] != '\0'; i++) {
-        if (!isdigit(termo[i]) && termo[i] != '.') {
+    int i;
+    
+    for (i = 0; termo[i] != '\0'; i++)  //Percorre cada caractere da string até o caractere nulo
+        if (!isdigit(termo[i]) && termo[i] != '.') //Se o caractere atual não é um dígito e não é um ponto decimal
             return 0;
-        }
-    }
+
     return 1;
 }
 
@@ -195,7 +223,7 @@ void InsereT(TpLista **pProgram, TpCode *nova) {
 	}
 }
 
-char VerifaVazia(TpLista *pProgram) {
+char VerifVazia(TpLista *pProgram) {
 	TpLista *aux = pProgram;
 	while(aux->prox != NULL)
 		aux = aux->prox;
@@ -211,7 +239,7 @@ void exibe(TpLista *pProgram) {
 	TpLista *aux = pProgram;
 	TpCode *auxT;
 
-	while(aux->prox != NULL)
+	while(aux != NULL)
 	{
 		auxT = aux->tokens;
 		while(auxT != NULL)
@@ -296,6 +324,50 @@ void CarregaL(TpLista **pProgram) {
         }
     }
     fclose(arq);
+}
+
+//Armazenando as variaveis e seus valores na memoria
+void ArmazenaMemoria(TpLista *pPrograma, PilhaM **pilhaM) {
+	TpLista *auxL = pPrograma;
+	TpCode *auxT, *auxT2;
+	float valor;
+	char variavel[10];
+
+	while(auxL != NULL) {
+		auxT = auxL->tokens;
+		if(strcmp(auxT->token, "def") == 0) { //se for uma funcao pula para o fim da funcao
+			while(strcmp(auxT->token, "fim-def") != 0) {
+				auxL = auxL->prox;
+				auxT = auxL->tokens;
+			}
+		}
+		else {
+			auxT2 = auxT;
+
+			while(auxT2->prox != NULL) { //percorre a lista de tokens
+				auxT2 = auxT2->prox;
+				if(strcmp(auxT2->token, "=") == 0) { //se for uma atribuicao
+					auxT2 = auxT2->prox; 
+					if(auxT2->prox == NULL) { //se o proximo valor depois da atribuicao for nulo
+						pushM(&(*pilhaM), auxT->token, auxT2->token, NULL); //é uma variavel com valor
+					}
+				}
+			}
+		}
+		auxL = auxL->prox;
+	}
+}
+
+void mostrarPilhaMem(PilhaM *pilhaM) {
+	PilhaM *aux = pilhaM;
+	printf("\n");
+
+	while(aux != NULL) {
+		if(aux->terminal == 'V') 
+			printf("%s = %s\n", aux->ident.variavel, aux->valor);
+
+		aux = aux->prox;
+	}
 }
 
 //Funcao ListaGen para resolver expressoes aritmeticas

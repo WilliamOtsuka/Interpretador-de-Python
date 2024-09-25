@@ -3,10 +3,16 @@
 #include <string.h>
 #include <math.h>
 #include <conio.h>
+#include <ctype.h> 
 #include "TADTrab.h"
 
 int main(){
-    TpLista *pProgram=NULL;
+    TpLista *pProgram = NULL;
+    PilhaM *pilhaM = NULL;
+
     CarregaL(&pProgram);
     exibe(pProgram);
+
+    ArmazenaMemoria(pProgram, &pilhaM);
+    mostrarPilhaMem(pilhaM);
 }
