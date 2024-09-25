@@ -31,10 +31,16 @@ struct Pilha {
 	struct Pilha *prox;
 }; typedef struct Pilha Pilha;
 
-struct Fila{
+struct Fila {
 	ListaGen *info;
-	struct Pilha *prox;
+	struct Fila *prox;
 }; typedef struct Fila Fila;
+
+struct PilhaMem {
+	int valor;
+	
+	struct PilhaMEm *topo;
+}
 
 //---------------TAD PILHA---------------------
 
@@ -67,37 +73,40 @@ void initF(Fila **f) {
 }
 
 void enqueue(Fila **f, ListaGen *info){
-	Fila *novo = *f;
+	Fila *novo = *f, *aux;
 	if (*f == NULL) {
-    // A fila esta vazia, inicializa o primeiro no
-    *f=(Fila*)malloc(sizeof(Fila));
-    (*f)->prox=NULL;
-    (*f)->info=info;
-	} else {
-	    while (novo->prox != NULL) {
+		// A fila esta vazia, inicializa o primeiro no
+		*f = (Fila*)malloc(sizeof(Fila));
+		(*f)->info = info;
+		(*f)->prox = NULL;
+	} 
+	else {
+	    while (novo->prox != NULL) 
 	        novo = novo->prox;
-	    }
-	    novo->prox = (Fila*)malloc(sizeof(Fila));
-	    novo->prox->info = info;
-	    novo->prox->prox = NULL;
+	    
+	    aux = (Fila*)malloc(sizeof(Fila));
+	    aux->info = info;
+	    aux->prox = NULL;
+		novo->prox = aux;
 	}
 }
 
 void dequeue (Fila **f, ListaGen **info){
-	Fila *aux= *f;
+	Fila *aux = *f;
 	*info = aux->info;
 	*f = aux->prox;
 	free(aux);
 }
 
-void IsEmptyF(Fila *f){
-	return f==NULL;
+char IsEmptyF(Fila *f){
+	return f == NULL;
 }
 
 //----------------------------------------------
 
 int isNumber(char termo[]) {
-    for (int i = 0; termo[i] != '\0'; i++) {
+	int i;
+    for (i = 0; termo[i] != '\0'; i++) {
         if (!isdigit(termo[i]) && termo[i] != '.') {
             return 0;
         }
@@ -113,7 +122,7 @@ int isOperation(char termo[]) {
 }
 
 int isFunction(char termo[]) {
-    return (strcmp(termo, "math.sqrt") == 0 || strcmp(termo, "math.fabs") == 0)
+    return (strcmp(termo, "math.sqrt") == 0 || strcmp(termo, "math.fabs") == 0);
 }
 
 ListaGen *CriaNo(char termo[]) {
@@ -207,6 +216,10 @@ void exibe(TpLista *pProgram) {
 		auxT = aux->tokens;
 		while(auxT != NULL)
 		{
+			if(strcmp(auxT->token, "fim-def") == 0)
+				printf("");
+
+			else
 			printf("%s ",auxT->token);
 			auxT = auxT->prox;
 		}
@@ -215,104 +228,140 @@ void exibe(TpLista *pProgram) {
 	}
 }
 
-void CarregaL(TpLista **pProgram) {
-	FILE *arq;
-	int i, j;
-	char token[15], nome[15], auxS[50];
-	TpCode *nova;
-	printf("Digite o nome do arquivo: ");
-	scanf("%s", nome);
-	arq = fopen(nome, "r");
+// void CarregaL(TpLista **pProgram) {
+// 	FILE *arq;
+// 	int i, j;
+// 	char token[15], nome[15], auxS[50];
+// 	TpCode *nova;
+// 	printf("Digite o nome do arquivo: ");
+// 	scanf("%s", nome);
+// 	arq = fopen(nome, "r");
 
-	if(arq == NULL)
-	{
-		printf("Erro ao abrir o arquivo\n");
-	}
-	else
-	{
-		while(!feof(arq))
-		{
-			fgets(auxS, 50, arq);
-			InsereL(&pProgram);
-			for(i = 0; i < strlen(auxS); i++)
-			{
-				for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++)
-				{
-					token[j] = auxS[i];
-				}
-				token[j] = '\0';
-				CriaT(&nova, token);
-				InsereT(pProgram, nova);
-			}
-		}
-	}
-	fclose(arq);
+// 	if(arq == NULL)
+// 	{
+// 		printf("Erro ao abrir o arquivo\n");
+// 	}
+// 	else
+// 	{
+// 		while(!feof(arq))
+// 		{
+// 			fgets(auxS, 50, arq);
+// 			InsereL(&pProgram);
+// 			for(i = 0; i < strlen(auxS); i++)
+// 			{
+// 				for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++)
+// 				{
+// 					token[j] = auxS[i];
+// 				}
+// 				token[j] = '\0';
+// 				CriaT(&nova, token);
+// 				InsereT(pProgram, nova);
+// 			}
+// 		}
+// 	}
+// 	fclose(arq);
+// }
+
+void CarregaL(TpLista **pProgram) {
+    FILE *arq;
+    int i, j;
+    char token[15], nome[15], auxS[50];
+    TpCode *nova;
+    printf("Digite o nome do arquivo: ");
+    scanf("%s", nome);
+    arq = fopen(nome, "r");
+
+    if(arq == NULL) {
+        printf("Erro ao abrir o arquivo\n");
+    }
+	else {
+        while(fgets(auxS, 50, arq) != NULL) {
+			InsereL(pProgram);
+
+            if(strlen(auxS) == 1 && auxS[0] == '\n') {
+                strcpy(token, "fim-def");
+                CriaT(&nova, token);
+                InsereT(pProgram, nova);
+            } 
+			else {
+                for(i = 0; i < strlen(auxS); i++) {
+                    for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++) {
+                        token[j] = auxS[i];
+                    }
+                    token[j] = '\0';
+                    CriaT(&nova, token);
+                    InsereT(pProgram, nova);
+                }
+            }
+        }
+    }
+    fclose(arq);
 }
 
 //Funcao ListaGen para resolver expressoes aritmeticas
 
-float resolve(char equacao[100]) {
-    float result;
+// float resolve(char equacao[100]) {
+//     float result;
     
-    //construir a ListaGen com todas a expressao aritmetica
-    Pilha *p;
-    ListaGen *L = NULL, *atual;
-    Fila *f;
+//     //construir a ListaGen com todas a expressao aritmetica
+//     Pilha *p;
+//     ListaGen *L = NULL, *atual;
+//     Fila *f;
 
-    TpTermo *lista = separa(equacao);
+//     TpTermo *lista = separa(equacao);
     
-    init(&p);
-    initF(&f);
+//     init(&p);
+//     initF(&f);
 
-    while(lista != NULL) {
-        if(L == NULL)
-            L = atual = CriaNo(lista->termo);
+//     while(lista != NULL) {
+//         if(L == NULL)
+//             L = atual = CriaNo(lista->termo);
 
-        else {
-            if(strcmp(lista->termo, "(") == 0) {
-                atual->cauda = CriaNo("0");
-                atual = atual->cauda;
-                lista = lista->prox;
-                push(&p, atual);
+//         else {
+//             if(strcmp(lista->termo, "(") == 0) {
+//                 atual->cauda = CriaNo("0");
+//                 atual = atual->cauda;
+//                 lista = lista->prox;
+//                 push(&p, atual);
 
-                atual->cabeca = CriaNo(lista->termo);
-                atual = atual->cabeca;
-            }
-            else
-                if(strcmp(lista->termo,")") == 0)
-                    pop(&p, &atual);
+//                 atual->cabeca = CriaNo(lista->termo);
+//                 atual = atual->cabeca;
+//             }
+//             else
+//                 if(strcmp(lista->termo,")") == 0)
+//                     pop(&p, &atual);
 
-                else {
-                    atual->cauda = CriaNo(lista->termo);
-                    atual = atual->cabeca;
-                }
-		}
-        lista = lista->prox;
-    }
+//                 else {
+//                     atual->cauda = CriaNo(lista->termo);
+//                     atual = atual->cabeca;
+//                 }
+// 		}
+//         lista = lista->prox;
+//     }
 
-    //resolvendo a expressao
-    push(&p, L);
-    enqueue(&f, L);
+//     //resolvendo a expressao
+//     push(&p, L);
+//     enqueue(&f, L);
     
-    while(!isEmpty(F)) {
-        dequeue(&f, &atual);
+//     while(!isEmpty(f)) {
+//         dequeue(&f, &atual);
         
-        while(!Nula(atual)) {
-            if(atual->cabeca != NULL) {
-                push(&p, atual->cabeca);
-                enqueue(&f, atual->cabeca);
-            }   
-            atual = atual->cauda;
-        }
-    }
+//         while(!Nula(atual)) {
+//             if(atual->cabeca != NULL) {
+//                 push(&p, atual->cabeca);
+//                 enqueue(&f, atual->cabeca);
+//             }   
+//             atual = atual->cauda;
+//         }
+//     }
 
-    while(!isEmpty(P)) {
-        pop(&p, &atual);
-        if(atual != L)
-            atual->info.valor = calcula(atual->cabeca);
+//     while(!isEmpty(p)) {
+//         pop(&p, &atual);
+//         if(atual != L)
+//             atual->info.valor = calcula(atual->cabeca);
 
-        else 
-            result = calcula(atual);
-    }
-    return result;
-}
+//         else 
+//             result = calcula(atual);
+//     }
+//     return result;
+// }
