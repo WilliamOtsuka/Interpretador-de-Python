@@ -9,6 +9,10 @@ struct TpLista {
 	TpCode *tokens;
 }; typedef struct TpLista TpLista;
 
+struct TpVariavel{
+	char variavel[15];
+}; typedef struct TpVariavel TpVariavel;
+
 union TpInfo {
     float valor;
     char operacao[3];
@@ -36,10 +40,9 @@ struct Fila {
 	struct Fila *prox;
 }; typedef struct Fila Fila;
 
-union TpIdentificador
-{
+union TpIdentificador {
 	char variavel[10];
-	struct PilhaM *ponteiro;
+	PilhaVF *pfunc;
 };
 
 struct PilhaMemoria {
@@ -49,6 +52,12 @@ struct PilhaMemoria {
 	TpLista *ponteiro;
 	struct PilhaMemoria *prox;
 }; typedef struct PilhaMemoria PilhaM;
+
+struct PilhaVarFuncao {
+	char variavel[10];
+	char valor[10];
+	struct PilhaVarFuncao *prox;
+}; typedef struct PilhaVarFuncao PilhaVF;
 
 
 //---------------TAD PILHA---------------------
@@ -80,7 +89,7 @@ void initM(PilhaM **p) {
 	*p = NULL;
 }
 
-void pushM(PilhaM **p, char *variavel, char *valor, PilhaM *ponteiro) {
+void pushM(PilhaM **p, char *variavel, char *valor, TpLista *ponteiro) {
 	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
 
 	novo->terminal = 'V';
@@ -91,8 +100,44 @@ void pushM(PilhaM **p, char *variavel, char *valor, PilhaM *ponteiro) {
 	*p = novo;
 }
 
+void pushMF(PilhaM **p, TpLista *lista, TpLista *ponteiro) {
+	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
+
+	novo->terminal = 'F';
+	novo->ident.pfunc = NULL;
+	novo.
+	novo->valor[0] = '\0';
+	novo->prox = *p;
+	*p = novo;
+}
+
 char isEmptyM(PilhaM *p) {
 	return p == NULL;
+}
+
+//--------------TAD PILHA FUNC-----------------
+
+void initPF(PilhaVF **p) {
+	*p = NULL;
+}
+
+void pushPF(PilhaVF **p, char *variavel) {
+	PilhaVF *novo = (PilhaVF*)malloc(sizeof(PilhaVF));
+	strcpy(novo->variavel, variavel);
+	strcpy(novo->valor, "\0");
+	novo->prox = *p;
+	*p = novo;
+}
+
+char isEmptyPF(PilhaVF *p) {
+	return p == NULL;
+}
+
+void popPF(PilhaVF **p, char *variavel) {
+	PilhaVF *aux = *p;
+	strcpy(variavel, aux->variavel);
+	*p = aux->prox;
+	free(aux);
 }
 
 //----------------TAD FILA---------------------
@@ -172,7 +217,6 @@ ListaGen *CriaNo(char termo[]) {
     return novo;
 }
 
-
 void CriaL (TpLista **nova) {
 	*nova = (TpLista*)malloc(sizeof(TpLista));
 	(*nova)->ant = NULL;
@@ -235,27 +279,6 @@ char VerifVazia(TpLista *pProgram) {
 		return 0;
 }
 
-void exibe(TpLista *pProgram) {
-	TpLista *aux = pProgram;
-	TpCode *auxT;
-
-	while(aux != NULL)
-	{
-		auxT = aux->tokens;
-		while(auxT != NULL)
-		{
-			if(strcmp(auxT->token, "fim-def") == 0)
-				printf("");
-
-			else
-			printf("%s ",auxT->token);
-			auxT = auxT->prox;
-		}
-		printf("\n");
-		aux = aux->prox;
-	}
-}
-
 // void CarregaL(TpLista **pProgram) {
 // 	FILE *arq;
 // 	int i, j;
@@ -305,6 +328,7 @@ void CarregaL(TpLista **pProgram) {
 	else {
         while(fgets(auxS, 50, arq) != NULL) {
 			InsereL(pProgram);
+			printf("%s", auxS);
 
             if(strlen(auxS) == 1 && auxS[0] == '\n') {
                 strcpy(token, "fim-def");
@@ -312,62 +336,38 @@ void CarregaL(TpLista **pProgram) {
                 InsereT(pProgram, nova);
             } 
 			else {
-                for(i = 0; i < strlen(auxS); i++) {
-                    for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++) {
-                        token[j] = auxS[i];
-                    }
-                    token[j] = '\0';
-                    CriaT(&nova, token);
-                    InsereT(pProgram, nova);
-                }
-            }
-        }
-    }
-    fclose(arq);
-}
+				for(i = 0; i < strlen(auxS); i++) {
+					// Se o caractere atual for um caractere especial, armazena-o como token separado
+					if(auxS[i] == '(' || auxS[i] == ')' || auxS[i] == ',' || auxS[i] == '=' || auxS[i] == '\"' || auxS[i] == '\'') {
+						token[0] = auxS[i];  // Armazena o caractere especial
+						token[1] = '\0';      // Marca o fim da string do token
+						CriaT(&nova, token);  // Cria o token
+						InsereT(pProgram, nova);  // Insere o token na lista
+					} 
+					// Se for uma palavra ou número
+					else if(auxS[i] != ' ' && auxS[i] != '\n') {
+						for(j = 0; auxS[i] != ' ' && auxS[i] != '\n' && auxS[i] != '(' && auxS[i] != ')' && auxS[i] != ',' && auxS[i] != '=' && auxS[i] != '\"' && auxS[i] != '\''; j++, i++) {
+							token[j] = auxS[i];  // Copia o token
+						}
+						token[j] = '\0';  // Finaliza o token
+						CriaT(&nova, token);
+						InsereT(pProgram, nova);
 
-//Armazenando as variaveis e seus valores na memoria
-void ArmazenaMemoria(TpLista *pPrograma, PilhaM **pilhaM) {
-	TpLista *auxL = pPrograma;
-	TpCode *auxT, *auxT2;
-	float valor;
-	char variavel[10];
-
-	while(auxL != NULL) {
-		auxT = auxL->tokens;
-		if(strcmp(auxT->token, "def") == 0) { //se for uma funcao pula para o fim da funcao
-			while(strcmp(auxT->token, "fim-def") != 0) {
-				auxL = auxL->prox;
-				auxT = auxL->tokens;
-			}
-		}
-		else {
-			auxT2 = auxT;
-
-			while(auxT2->prox != NULL) { //percorre a lista de tokens
-				auxT2 = auxT2->prox;
-				if(strcmp(auxT2->token, "=") == 0) { //se for uma atribuicao
-					auxT2 = auxT2->prox; 
-					if(auxT2->prox == NULL) { //se o proximo valor depois da atribuicao for nulo
-						pushM(&(*pilhaM), auxT->token, auxT2->token, NULL); //é uma variavel com valor
+						i--;  // Volta uma posição para não pular um caractere após o token especial
+					}
+					
+					// Verifica se o último caractere é uma aspa fechando
+					if (i == strlen(auxS) - 1 && (auxS[i] == '\"' || auxS[i] == '\'')) {
+						token[0] = auxS[i];
+						token[1] = '\0';
+						CriaT(&nova, token);
+						InsereT(pProgram, nova);
 					}
 				}
 			}
-		}
-		auxL = auxL->prox;
-	}
-}
-
-void mostrarPilhaMem(PilhaM *pilhaM) {
-	PilhaM *aux = pilhaM;
-	printf("\n");
-
-	while(aux != NULL) {
-		if(aux->terminal == 'V') 
-			printf("%s = %s\n", aux->ident.variavel, aux->valor);
-
-		aux = aux->prox;
-	}
+        }
+    }
+    fclose(arq);
 }
 
 //Funcao ListaGen para resolver expressoes aritmeticas
@@ -437,3 +437,87 @@ void mostrarPilhaMem(PilhaM *pilhaM) {
 //     }
 //     return result;
 // }
+
+void mostrarPilhaMem(PilhaM *pilhaM) {
+	PilhaM *aux = pilhaM;
+	printf("\n");
+
+	while(aux != NULL) {
+		if(aux->terminal == 'V') 
+			printf("%s = %s\n", aux->ident.variavel, aux->valor);
+
+		aux = aux->prox;
+	}
+}
+
+// Armazenando as variáveis e seus valores na memória
+void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
+	PilhaM *pilhaFM = NULL;
+	TpLista *auxL;
+    TpCode *auxT = token;
+    TpVariavel variaveis[10]; // Vetor para armazenar variáveis antes do operador '='
+    int varCount = 0, i;
+
+    // Inicializa a primeira variável
+    strcpy(variaveis[varCount++].variavel, token->token);
+
+    while (auxT->prox != NULL) { // percorre a lista de tokens
+        auxT = auxT->prox;
+
+        if (strcmp(auxT->token, ",") == 0) { // se for uma vírgula
+            auxT = auxT->prox; // move para o próximo token
+            strcpy(variaveis[varCount++].variavel, auxT->token); // Armazena a próxima variável no vetor
+        } 
+		else 
+			if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
+				auxT = auxT->prox; // move para o próximo token que deve ser o valor
+
+				if(auxT->prox == NULL)
+					// Armazena o valor nas variáveis encontradas antes do '='
+					for (i = 0; i < varCount; i++) {
+						pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
+					}
+				else { // É uma função
+					// Acha a lista ligada ao auxT->token
+					while (lista != NULL) {
+						if (strcmp(lista->tokens->token, auxT->token) == 0) {
+							pilhaFM = lista;
+
+						}
+						lista = lista->prox;
+					}
+					auxL = lista;
+					
+					while(strcmp(auxT->token, lista->tokens->token) != 0) {
+						auxL = auxL->prox;
+					}
+					
+				}
+				// Resetar o contador de variáveis
+				varCount = 0;
+			}
+    }
+}
+
+void compilar(TpLista *pProgram , PilhaM **pilhaM) {
+	TpLista *auxL = pProgram;
+	TpCode *auxT, auxT2;
+
+	initM(&(*pilhaM));
+
+	while(auxL != NULL)
+	{
+		auxT = auxL->tokens;
+
+		if(strcmp(auxT->token, "def") == 0) { //se for uma funcao pula para o fim da funcao
+			while(strcmp(auxT->token, "fim-def") != 0) {
+				auxL = auxL->prox;
+				auxT = auxL->tokens;
+			}
+		}
+		else {
+			armazenaMemoria(auxT, &(*pilhaM), auxL);
+		}
+		auxL = auxL->prox;
+	}
+}

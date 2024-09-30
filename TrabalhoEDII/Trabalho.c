@@ -11,8 +11,8 @@ int main(){
     PilhaM *pilhaM = NULL;
 
     CarregaL(&pProgram);
-    exibe(pProgram);
-
-    ArmazenaMemoria(pProgram, &pilhaM);
+    compilar(pProgram, &pilhaM);
+//    exibe(pProgram);
     mostrarPilhaMem(pilhaM);
 }
+
