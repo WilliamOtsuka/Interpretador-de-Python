@@ -4,6 +4,7 @@
 #include <math.h>
 #include <conio.h>
 #include <ctype.h> 
+
 #include "TADTrab.h"
 
 int main(){
@@ -11,8 +12,9 @@ int main(){
     PilhaM *pilhaM = NULL;
 
     CarregaL(&pProgram);
+    exibe(pProgram);
+    
     compilar(pProgram, &pilhaM);
-//    exibe(pProgram);
+    
     mostrarPilhaMem(pilhaM);
 }
-

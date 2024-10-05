@@ -40,9 +40,13 @@ struct Fila {
 	struct Fila *prox;
 }; typedef struct Fila Fila;
 
+struct TpFrase {
+	char frase[15];
+	struct TpFrase *prox;
+}; typedef struct TpFrase TpFrase;
+
 union TpIdentificador {
 	char variavel[10];
-	PilhaVF *pfunc;
 };
 
 struct PilhaMemoria {
@@ -53,11 +57,11 @@ struct PilhaMemoria {
 	struct PilhaMemoria *prox;
 }; typedef struct PilhaMemoria PilhaM;
 
-struct PilhaVarFuncao {
-	char variavel[10];
-	char valor[10];
-	struct PilhaVarFuncao *prox;
-}; typedef struct PilhaVarFuncao PilhaVF;
+// struct PilhaVarFuncao {
+// 	char variavel[10];
+// 	char valor[10];
+// 	struct PilhaVarFuncao *prox;
+// }; typedef struct PilhaVarFuncao PilhaVF;
 
 
 //---------------TAD PILHA---------------------
@@ -100,16 +104,16 @@ void pushM(PilhaM **p, char *variavel, char *valor, TpLista *ponteiro) {
 	*p = novo;
 }
 
-void pushMF(PilhaM **p, TpLista *lista, TpLista *ponteiro) {
-	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
+// void pushMF(PilhaM **p, TpLista *lista, TpLista *ponteiro) {
+// 	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
 
-	novo->terminal = 'F';
-	novo->ident.pfunc = NULL;
-	novo.
-	novo->valor[0] = '\0';
-	novo->prox = *p;
-	*p = novo;
-}
+// 	novo->terminal = 'F';
+// 	novo->ident.pfunc = NULL;
+// 	novo.
+// 	novo->valor[0] = '\0';
+// 	novo->prox = *p;
+// 	*p = novo;
+// }
 
 char isEmptyM(PilhaM *p) {
 	return p == NULL;
@@ -117,28 +121,28 @@ char isEmptyM(PilhaM *p) {
 
 //--------------TAD PILHA FUNC-----------------
 
-void initPF(PilhaVF **p) {
-	*p = NULL;
-}
+// void initPF(PilhaVF **p) {
+// 	*p = NULL;
+// }
 
-void pushPF(PilhaVF **p, char *variavel) {
-	PilhaVF *novo = (PilhaVF*)malloc(sizeof(PilhaVF));
-	strcpy(novo->variavel, variavel);
-	strcpy(novo->valor, "\0");
-	novo->prox = *p;
-	*p = novo;
-}
+// void pushPF(PilhaVF **p, char *variavel) {
+// 	PilhaVF *novo = (PilhaVF*)malloc(sizeof(PilhaVF));
+// 	strcpy(novo->variavel, variavel);
+// 	strcpy(novo->valor, "\0");
+// 	novo->prox = *p;
+// 	*p = novo;
+// }
 
-char isEmptyPF(PilhaVF *p) {
-	return p == NULL;
-}
+// char isEmptyPF(PilhaVF *p) {
+// 	return p == NULL;
+// }
 
-void popPF(PilhaVF **p, char *variavel) {
-	PilhaVF *aux = *p;
-	strcpy(variavel, aux->variavel);
-	*p = aux->prox;
-	free(aux);
-}
+// void popPF(PilhaVF **p, char *variavel) {
+// 	PilhaVF *aux = *p;
+// 	strcpy(variavel, aux->variavel);
+// 	*p = aux->prox;
+// 	free(aux);
+// }
 
 //----------------TAD FILA---------------------
 
@@ -179,12 +183,22 @@ char IsEmptyF(Fila *f){
 //----------------------------------------------
 int isNumber(char termo[]) {
     int i;
-    
-    for (i = 0; termo[i] != '\0'; i++)  //Percorre cada caractere da string até o caractere nulo
-        if (!isdigit(termo[i]) && termo[i] != '.') //Se o caractere atual não é um dígito e não é um ponto decimal
-            return 0;
+    int decimalPointCount = 0; // Contador para pontos decimais
 
-    return 1;
+    for (i = 0; termo[i] != '\0'; i++) { // Percorre cada caractere da string até o caractere nulo
+        if (!isdigit(termo[i])) { // Se o caractere atual não é um dígito
+            if (termo[i] == '.') { // Verifica se é um ponto decimal
+                decimalPointCount++;
+                if (decimalPointCount > 1) { // Se houver mais de um ponto decimal
+                    return 0;
+                }
+            } else {
+                return 0; // Se não for um dígito nem um ponto decimal, retorna 0
+            }
+        }
+    }
+
+    return 1; // Se todos os caracteres forem válidos, retorna 1
 }
 
 int isOperation(char termo[]) {
@@ -316,7 +330,7 @@ char VerifVazia(TpLista *pProgram) {
 void CarregaL(TpLista **pProgram) {
     FILE *arq;
     int i, j;
-    char token[15], nome[15], auxS[50];
+    char token[15], nome[15], auxS[80];
     TpCode *nova;
     printf("Digite o nome do arquivo: ");
     scanf("%s", nome);
@@ -326,9 +340,9 @@ void CarregaL(TpLista **pProgram) {
         printf("Erro ao abrir o arquivo\n");
     }
 	else {
-        while(fgets(auxS, 50, arq) != NULL) {
+        while(fgets(auxS, 80, arq) != NULL) {
 			InsereL(pProgram);
-			printf("%s", auxS);
+			// printf("%s", auxS);
 
             if(strlen(auxS) == 1 && auxS[0] == '\n') {
                 strcpy(token, "fim-def");
@@ -368,6 +382,21 @@ void CarregaL(TpLista **pProgram) {
         }
     }
     fclose(arq);
+}
+
+void exibe(TpLista *lista) {
+	TpLista *auxL = lista;
+	TpCode *auxT;
+
+	while(auxL != NULL) {
+		auxT = auxL->tokens;
+		while(auxT != NULL) {
+			printf("%s ", auxT->token);
+			auxT = auxT->prox;
+		}
+		printf("\n");
+		auxL = auxL->prox;
+	}
 }
 
 //Funcao ListaGen para resolver expressoes aritmeticas
@@ -462,42 +491,122 @@ void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
     strcpy(variaveis[varCount++].variavel, token->token);
 
     while (auxT->prox != NULL) { // percorre a lista de tokens
-        auxT = auxT->prox;
-
+        auxT = auxT->prox;	
+		
         if (strcmp(auxT->token, ",") == 0) { // se for uma vírgula
             auxT = auxT->prox; // move para o próximo token
             strcpy(variaveis[varCount++].variavel, auxT->token); // Armazena a próxima variável no vetor
         } 
-		else 
-			if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
-				auxT = auxT->prox; // move para o próximo token que deve ser o valor
 
-				if(auxT->prox == NULL)
-					// Armazena o valor nas variáveis encontradas antes do '='
-					for (i = 0; i < varCount; i++) {
-						pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
-					}
-				else { // É uma função
-					// Acha a lista ligada ao auxT->token
-					while (lista != NULL) {
-						if (strcmp(lista->tokens->token, auxT->token) == 0) {
-							pilhaFM = lista;
+		if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
+			auxT = auxT->prox; // move para o próximo token que deve ser o valor
 
-						}
-						lista = lista->prox;
-					}
-					auxL = lista;
-					
-					while(strcmp(auxT->token, lista->tokens->token) != 0) {
-						auxL = auxL->prox;
-					}
-					
+			if(auxT->prox == NULL)
+				// Armazena o valor nas variáveis encontradas antes do '='
+				for (i = 0; i < varCount; i++) {
+					pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
 				}
-				// Resetar o contador de variáveis
-				varCount = 0;
-			}
+			// else { // É uma função
+			// 	// Acha a lista ligada ao auxT->token
+			// 	while (lista != NULL) {
+			// 		if (strcmp(lista->tokens->token, auxT->token) == 0) {
+			// 			pilhaFM = lista;
+
+			// 		}
+			// 		lista = lista->prox;
+			// 	}
+			// 	auxL = lista;
+				
+			// 	while(strcmp(auxT->token, lista->tokens->token) != 0) {
+			// 		auxL = auxL->prox;
+			// 	}
+				
+			// }
+			// Resetar o contador de variáveis
+			// varCount = 0;
+		}
+		// if(strcmp(auxT->token, "\"") == 0) {
+		// 	auxT = auxT->prox;
+		// 	pushM(&(*pilhaM), auxT->token, auxT->token, NULL);
+		// }
     }
 }
+
+TpFrase *criaFrase(char token[15]) {
+	TpFrase *nova = (TpFrase*)malloc(sizeof(TpFrase));
+	strcpy(nova->frase, token);
+	nova->prox = NULL;
+
+	return nova;
+}
+
+void print(TpCode *token, PilhaM *pilhaM) {
+	TpCode *auxT = token;
+	TpFrase *frase = NULL, *auxFrase;
+	PilhaM *auxP = pilhaM;
+
+	auxT = auxT->prox->prox; // pula o '('
+	
+	if(strcmp(auxT->token, "\"") == 0) {
+		auxT = auxT->prox;
+
+		while(strcmp(auxT->token, "\"") != 0) {
+			if(frase == NULL) {
+				frase = criaFrase(auxT->token);
+				auxFrase = frase;
+			}	
+
+			else {
+				auxFrase->prox = criaFrase(auxT->token);
+				auxFrase = auxFrase->prox;
+			}
+			auxT = auxT->prox;
+		}
+		auxT = auxT->prox; // depois do "
+		auxFrase = frase;
+
+		if(strcmp(auxT->token, "%") == 0) {	 // se tiver %s, %d, %f
+			while(auxFrase != NULL) {
+				if(auxFrase->frase[0] == '%') // print("%d" % 10)
+					auxT = auxT->prox;
+
+				if(strcmp(auxT->token, "(") == 0)  // print("%d %d" % (10, 20))
+					auxT = auxT->prox;
+				
+				if(isNumber(auxT->token)) {	// print("%d %d" % (10, 20))				
+					strcpy(auxFrase->frase, auxT->token);
+					auxT = auxT->prox;
+				}
+				if(!isNumber(auxT->token)) { 
+					if(strcmp(auxT->token, "\"") == 0) { // print("%s %d" % ("teste", 20))
+						auxT = auxT->prox;
+						strcpy(auxFrase->frase, auxT->token);
+						auxT = auxT->prox->prox; // pula o fecha "
+					}
+					else { //variavel?
+						auxP = pilhaM;
+						while(auxP != NULL) {
+							if(auxP->terminal == 'V') {
+								if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+									strcpy(auxFrase->frase, auxP->valor);
+									auxT = auxT->prox;
+								}
+								auxP = auxP->prox;
+							}
+						}
+					}
+				}
+				auxFrase = auxFrase->prox;				
+			}
+		}
+		auxFrase = frase;
+		while(auxFrase != NULL) {
+			printf("%s ", auxFrase->frase);
+			auxFrase = auxFrase->prox;
+		}
+	}
+}
+
 
 void compilar(TpLista *pProgram , PilhaM **pilhaM) {
 	TpLista *auxL = pProgram;
@@ -516,7 +625,11 @@ void compilar(TpLista *pProgram , PilhaM **pilhaM) {
 			}
 		}
 		else {
+			if(strcmp(auxT->token, "print") == 0) {
+				print(auxT, *pilhaM);
+			}
 			armazenaMemoria(auxT, &(*pilhaM), auxL);
+			
 		}
 		auxL = auxL->prox;
 	}
