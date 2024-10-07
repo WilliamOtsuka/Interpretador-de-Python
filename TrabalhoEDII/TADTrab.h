@@ -181,11 +181,17 @@ char IsEmptyF(Fila *f){
 }
 
 //----------------------------------------------
-int isNumber(char termo[]) {
-    int i;
-    int decimalPointCount = 0; // Contador para pontos decimais
 
-    for (i = 0; termo[i] != '\0'; i++) { // Percorre cada caractere da string até o caractere nulo
+int isNumber(char termo[]) {
+    int i = 0;
+    int decimalPointCount = 0; 
+
+    // Verificar se o primeiro caractere é um sinal de negativo
+    if (termo[0] == '-') {
+        i = 1;
+    }
+
+    for (; termo[i] != '\0'; i++) { // Percorre cada caractere da string até o caractere nulo
         if (!isdigit(termo[i])) { // Se o caractere atual não é um dígito
             if (termo[i] == '.') { // Verifica se é um ponto decimal
                 decimalPointCount++;
@@ -193,12 +199,13 @@ int isNumber(char termo[]) {
                     return 0;
                 }
             } else {
-                return 0; // Se não for um dígito nem um ponto decimal, retorna 0
+                return 0; // Se não for um dígito nem um ponto decimal
             }
         }
     }
 
-    return 1; // Se todos os caracteres forem válidos, retorna 1
+    // Se todos os caracteres forem válidos, retorna 1
+    return 1;
 }
 
 int isOperation(char termo[]) {
@@ -400,6 +407,56 @@ void exibe(TpLista *lista) {
 	}
 }
 
+// Função para identificar se existe uma equação
+int identificar_equacao(TpCode *lista) {
+    TpCode *atual = lista;
+    
+    int encontrou_operando = 0;
+    int encontrou_operador = 0;
+    int parenteses_abertos = 0;
+    
+    while (atual != NULL) {
+		if(strcmp(atual->token, "\"") == 0)
+			return -1;
+
+        if (strcmp(atual->token, "(") == 0) {
+            // Incrementa contagem de parênteses abertos
+            parenteses_abertos++;
+        } 
+		else 
+			if (strcmp(atual->token, ")") == 0) {
+            // Decrementa contagem de parênteses abertos
+            parenteses_abertos--;
+
+            if (parenteses_abertos < 0) {
+                // Há mais parênteses fechando do que abrindo
+                return -1;  // Indica erro de parênteses incorretos
+            }
+        } 
+		else 
+			if (isNumber(atual->token)) {
+            encontrou_operando = 1;
+        	} 
+			else 
+				if (isOperation(atual->token)) {
+					if (encontrou_operando) {
+                		encontrou_operador = 1;
+            		}
+        		}
+        atual = atual->prox;
+    }
+    
+    // Verifica se todos os parênteses foram fechados corretamente
+    if (parenteses_abertos != 0) {
+        return -1;  // Indica erro de parênteses incorretos
+    }
+    if(encontrou_operando && encontrou_operador && parenteses_abertos == 0)
+		return 1;  // Identificou uma equação
+
+    return -1;  // Não identificou uma equação
+}
+
+
 //Funcao ListaGen para resolver expressoes aritmeticas
 
 // float resolve(char equacao[100]) {
@@ -487,11 +544,12 @@ void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
     TpCode *auxT = token;
     TpVariavel variaveis[10]; // Vetor para armazenar variáveis antes do operador '='
     int varCount = 0, i;
+	char equacao[100] = "";
 
     // Inicializa a primeira variável
     strcpy(variaveis[varCount++].variavel, token->token);
 
-    while (auxT->prox != NULL) { // percorre a lista de tokens
+    while (auxT != NULL && auxT->prox != NULL) { // percorre a lista de tokens
         auxT = auxT->prox;	
 		
         if (strcmp(auxT->token, ",") == 0) { // se for uma vírgula
@@ -501,37 +559,49 @@ void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
 
 		if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
 
-
-			auxT = auxT->prox; // move para o próximo token que deve ser o valor
-
-			if(auxT->prox == NULL)
-				// Armazena o valor nas variáveis encontradas antes do '='
-				for (i = 0; i < varCount; i++) {
-					pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
+			if(identificar_equacao(auxT) == 1) {
+				// Coloca o auxT dentro da variavel de equacao
+				auxT = auxT->prox;
+				while (auxT != NULL) {
+					strcat(equacao, auxT->token);
+					auxT = auxT->prox;
 				}
-			// else { // É uma função
-			// 	// Acha a lista ligada ao auxT->token
-			// 	while (lista != NULL) {
-			// 		if (strcmp(lista->tokens->token, auxT->token) == 0) {
-			// 			pilhaFM = lista;
+				printf("Equacao: %s\n", equacao);
+				// Resolve a equação
+				// resolve(equacao);
+			}
+			else {
+				auxT = auxT->prox; // move para o próximo token que deve ser o valor
+				if(auxT->prox == NULL)
+					// Armazena o valor nas variáveis encontradas antes do '='
+					for (i = 0; i < varCount; i++) {
+						pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
+					}
+				// else { // É uma função
+				// 	// Acha a lista ligada ao auxT->token
+				// 	while (lista != NULL) {
+				// 		if (strcmp(lista->tokens->token, auxT->token) == 0) {
+				// 			pilhaFM = lista;
 
-			// 		}
-			// 		lista = lista->prox;
-			// 	}
-			// 	auxL = lista;
+				// 		}
+				// 		lista = lista->prox;
+				// 	}
+				// 	auxL = lista;
+					
+				// 	while(strcmp(auxT->token, lista->tokens->token) != 0) {
+				// 		auxL = auxL->prox;
+				// 	}
+					
+				// }
+				// Resetar o contador de variáveis
+				// varCount = 0;
 				
-			// 	while(strcmp(auxT->token, lista->tokens->token) != 0) {
-			// 		auxL = auxL->prox;
-			// 	}
-				
-			// }
-			// Resetar o contador de variáveis
-			// varCount = 0;
-		}
-		if(strcmp(auxT->token, "\"") == 0 && auxT != NULL) {
-			auxT = auxT->prox;
-			pushM(&(*pilhaM), variaveis[0].variavel, auxT->token, NULL);
-			auxT = auxT->prox;
+				if(auxT != NULL && strcmp(auxT->token, "\"") == 0) {
+				auxT = auxT->prox;
+				pushM(&(*pilhaM), variaveis[0].variavel, auxT->token, NULL);
+				auxT = auxT->prox;
+				}
+			}
 		}
     }
 }
@@ -668,6 +738,8 @@ void verifCond(TpCode *token, PilhaM *pilhaM) {
 					i++;
 				}
 				else //se for variavel
+				{
+				}
 				//Colocar para váriavel dps
 			}
 			else {

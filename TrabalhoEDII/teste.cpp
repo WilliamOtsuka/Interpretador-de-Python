@@ -1,131 +1,850 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-// DefiniÁ„o da estrutura do nÛ da pilha
-typedef struct PilhaMemoria {
-    char variavel[10];
+struct TpCode {
+	char token[15];
+	struct TpCode *prox;
+}; typedef struct TpCode TpCode;
+
+struct TpLista {
+	struct TpLista *prox, *ant;
+	TpCode *tokens;
+}; typedef struct TpLista TpLista;
+
+struct TpVariavel{
+	char variavel[15];
+}; typedef struct TpVariavel TpVariavel;
+
+union TpInfo {
     float valor;
-    struct PilhaMemoria *prox;
-} PilhaM;
-
-// DefiniÁ„o da estrutura do nÛ da fila
-typedef struct FilaNode {
+    char operacao[3];
     char funcao[20];
-    struct FilaNode *prox;
-} FilaNode;
+};
 
-// DefiniÁ„o da estrutura da fila
-typedef struct Fila {
-    FilaNode *frente, *tras;
-} Fila;
+struct listagen {
+    char terminal;
+    union TpInfo info;
+    struct listagen *cabeca, *cauda;
+}; typedef struct listagen ListaGen;
 
-// FunÁ„o para inicializar a pilha
-void initPilha(PilhaM **topo) {
-    *topo = NULL;
+struct TpTermo {
+	char termo[15];
+	struct TpTermo *prox;
+}; typedef struct TpTermo TpTermo;
+
+struct Pilha {
+	ListaGen *info;
+	struct Pilha *prox;
+}; typedef struct Pilha Pilha;
+
+struct Fila {
+	ListaGen *info;
+	struct Fila *prox;
+}; typedef struct Fila Fila;
+
+struct TpFrase {
+	char frase[15];
+	struct TpFrase *prox;
+}; typedef struct TpFrase TpFrase;
+
+union TpIdentificador {
+	char variavel[10];
+};
+
+struct PilhaMemoria {
+	char terminal;
+	union TpIdentificador ident;
+	char valor[10];
+	TpLista *ponteiro;
+	struct PilhaMemoria *prox;
+}; typedef struct PilhaMemoria PilhaM;
+
+// struct PilhaVarFuncao {
+// 	char variavel[10];
+// 	char valor[10];
+// 	struct PilhaVarFuncao *prox;
+// }; typedef struct PilhaVarFuncao PilhaVF;
+
+
+//---------------TAD PILHA---------------------
+
+void init(Pilha **p) {
+	*p = NULL;
 }
 
-// FunÁ„o para inicializar a fila
-void initFila(Fila *fila) {
-    fila->frente = fila->tras = NULL;
+void push(Pilha **p, ListaGen *info) {
+	Pilha *novo = (Pilha*)malloc(sizeof(Pilha));
+	novo->info = info;
+	novo->prox = *p;
+	*p = novo;
 }
 
-// FunÁ„o para verificar se a pilha est· vazia
-int isEmptyPilha(PilhaM *topo) {
-    return topo == NULL;
+void pop(Pilha **p, ListaGen **info) {
+	Pilha *aux = *p;
+	*info = aux->info;
+	*p = aux->prox;
+	free(aux);
 }
 
-// FunÁ„o para verificar se a fila est· vazia
-int isEmptyFila(Fila *fila) {
-    return fila->frente == NULL;
+char isEmpty(Pilha *p) {
+	return p == NULL;
 }
 
-// FunÁ„o para adicionar um nÛ no topo da pilha
-void pushPilha(PilhaM **topo, char variavel[], float valor) {
-    PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
-    strcpy(novo->variavel, variavel);
-    novo->valor = valor;
-    novo->prox = *topo;
-    *topo = novo;
+//-------------TAD PILHA MEMORIA----------------
+void initM(PilhaM **p) {
+	*p = NULL;
 }
 
-// FunÁ„o para remover o nÛ do topo da pilha
-void popPilha(PilhaM **topo) {
-    if (isEmptyPilha(*topo)) {
-        printf("Pilha est· vazia\n");
-        return;
+void pushM(PilhaM **p, char *variavel, char *valor, TpLista *ponteiro) {
+	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
+
+	novo->terminal = 'V';
+	strcpy(novo->ident.variavel, variavel);
+	strcpy(novo->valor, valor);
+	novo->ponteiro = ponteiro;
+	novo->prox = *p;
+	*p = novo;
+}
+
+// void pushMF(PilhaM **p, TpLista *lista, TpLista *ponteiro) {
+// 	PilhaM *novo = (PilhaM*)malloc(sizeof(PilhaM));
+
+// 	novo->terminal = 'F';
+// 	novo->ident.pfunc = NULL;
+// 	novo.
+// 	novo->valor[0] = '\0';
+// 	novo->prox = *p;
+// 	*p = novo;
+// }
+
+char isEmptyM(PilhaM *p) {
+	return p == NULL;
+}
+
+//--------------TAD PILHA FUNC-----------------
+
+// void initPF(PilhaVF **p) {
+// 	*p = NULL;
+// }
+
+// void pushPF(PilhaVF **p, char *variavel) {
+// 	PilhaVF *novo = (PilhaVF*)malloc(sizeof(PilhaVF));
+// 	strcpy(novo->variavel, variavel);
+// 	strcpy(novo->valor, "\0");
+// 	novo->prox = *p;
+// 	*p = novo;
+// }
+
+// char isEmptyPF(PilhaVF *p) {
+// 	return p == NULL;
+// }
+
+// void popPF(PilhaVF **p, char *variavel) {
+// 	PilhaVF *aux = *p;
+// 	strcpy(variavel, aux->variavel);
+// 	*p = aux->prox;
+// 	free(aux);
+// }
+
+//----------------TAD FILA---------------------
+
+void initF(Fila **f) {
+	*f = NULL;
+}
+
+void enqueue(Fila **f, ListaGen *info){
+	Fila *novo = *f, *aux;
+	if (*f == NULL) {
+		// A fila esta vazia, inicializa o primeiro no
+		*f = (Fila*)malloc(sizeof(Fila));
+		(*f)->info = info;
+		(*f)->prox = NULL;
+	} 
+	else {
+	    while (novo->prox != NULL) 
+	        novo = novo->prox;
+	    
+	    aux = (Fila*)malloc(sizeof(Fila));
+	    aux->info = info;
+	    aux->prox = NULL;
+		novo->prox = aux;
+	}
+}
+
+void dequeue (Fila **f, ListaGen **info){
+	Fila *aux = *f;
+	*info = aux->info;
+	*f = aux->prox;
+	free(aux);
+}
+
+char IsEmptyF(Fila *f){
+	return f == NULL;
+}
+
+//----------------------------------------------
+int isNumber(char termo[]) {
+    int i;
+    int decimalPointCount = 0; // Contador para pontos decimais
+
+    for (i = 0; termo[i] != '\0'; i++) { // Percorre cada caractere da string at√© o caractere nulo
+        if (!isdigit(termo[i])) { // Se o caractere atual n√£o √© um d√≠gito
+            if (termo[i] == '.') { // Verifica se √© um ponto decimal
+                decimalPointCount++;
+                if (decimalPointCount > 1) { // Se houver mais de um ponto decimal
+                    return 0;
+                }
+            } else {
+                return 0; // Se n√£o for um d√≠gito nem um ponto decimal
+            }
+        }
     }
-    PilhaM *temp = *topo;
-    *topo = (*topo)->prox;
-    free(temp);
+
+    return 1; // Se todos os caracteres forem v√°lidos
 }
 
-// FunÁ„o para adicionar um nÛ no final da fila
-void enqueueFila(Fila *fila, char funcao[]) {
-    FilaNode *novo = (FilaNode*)malloc(sizeof(FilaNode));
-    strcpy(novo->funcao, funcao);
-    novo->prox = NULL;
-    if (isEmptyFila(fila)) {
-        fila->frente = fila->tras = novo;
-    } else {
-        fila->tras->prox = novo;
-        fila->tras = novo;
+int isOperation(char termo[]) {
+    return (strcmp(termo, "+") == 0 || strcmp(termo, "-") == 0 || 
+            strcmp(termo, "*") == 0 || strcmp(termo, "/") == 0 || 
+			strcmp(termo, "//") == 0 || strcmp(termo, "**") == 0 ||
+			strcmp(termo, "%") == 0);
+}
+
+int isFunction(char termo[]) {
+    return (strcmp(termo, "math.sqrt") == 0 || strcmp(termo, "math.fabs") == 0);
+}
+
+ListaGen *CriaNo(char termo[]) {
+    ListaGen *novo = (ListaGen*)malloc(sizeof(ListaGen));
+    novo->cabeca = novo->cauda = NULL;
+
+    if (isNumber(termo)) {
+        novo->terminal = 'V';
+        novo->info.valor = atof(termo);
+    }
+	if (isOperation(termo)) {
+        novo->terminal = 'O';
+        strcpy(novo->info.operacao, termo);
+    } 
+	if (isFunction(termo)) {
+        novo->terminal = 'F';
+        strcpy(novo->info.funcao, termo);
+    } 
+	novo->cabeca = novo->cauda = NULL;
+    return novo;
+}
+
+void CriaL (TpLista **nova) {
+	*nova = (TpLista*)malloc(sizeof(TpLista));
+	(*nova)->ant = NULL;
+	(*nova)->prox = NULL;
+	(*nova)->tokens = NULL;
+}
+
+void InsereL(TpLista **pProgram) {
+	TpLista *aux, *nova;
+	CriaL(&nova);
+	if(*pProgram == NULL)
+		*pProgram = nova;
+	
+	else
+	{
+		aux = *pProgram;
+		while(aux->prox != NULL)
+		{
+			aux = aux->prox;
+		}
+		aux->prox = nova;
+		nova->ant = aux;
+	}
+}
+
+void CriaT (TpCode **nova,char token[15]) {
+	*nova = (TpCode*)malloc(sizeof(TpCode));
+	strcpy((*nova)->token, token);
+	(*nova)->prox = NULL;
+}
+
+void InsereT(TpLista **pProgram, TpCode *nova) {
+	TpLista *auxL = *pProgram;
+	TpCode *aux;
+	
+	while(auxL->prox != NULL)
+		auxL = auxL->prox;
+
+	if(auxL->tokens == NULL)
+		auxL->tokens = nova;
+
+	else
+	{
+		aux = auxL->tokens;
+		while(aux->prox != NULL)
+			aux = aux->prox;
+		aux->prox = nova;
+	}
+}
+
+char VerifVazia(TpLista *pProgram) {
+	TpLista *aux = pProgram;
+	while(aux->prox != NULL)
+		aux = aux->prox;
+
+	if(aux->tokens == NULL)
+		return 1;
+
+	else
+		return 0;
+}
+
+// void CarregaL(TpLista **pProgram) {
+// 	FILE *arq;
+// 	int i, j;
+// 	char token[15], nome[15], auxS[50];
+// 	TpCode *nova;
+// 	printf("Digite o nome do arquivo: ");
+// 	scanf("%s", nome);
+// 	arq = fopen(nome, "r");
+
+// 	if(arq == NULL)
+// 	{
+// 		printf("Erro ao abrir o arquivo\n");
+// 	}
+// 	else
+// 	{
+// 		while(!feof(arq))
+// 		{
+// 			fgets(auxS, 50, arq);
+// 			InsereL(&pProgram);
+// 			for(i = 0; i < strlen(auxS); i++)
+// 			{
+// 				for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++)
+// 				{
+// 					token[j] = auxS[i];
+// 				}
+// 				token[j] = '\0';
+// 				CriaT(&nova, token);
+// 				InsereT(pProgram, nova);
+// 			}
+// 		}
+// 	}
+// 	fclose(arq);
+// }
+
+void CarregaL(TpLista **pProgram) {
+    FILE *arq;
+    int i, j;
+    char token[15], nome[15], auxS[80];
+    TpCode *nova;
+    printf("Digite o nome do arquivo: ");
+    scanf("%s", nome);
+    arq = fopen(nome, "r");
+
+    if(arq == NULL) {
+        printf("Erro ao abrir o arquivo\n");
+    }
+	else {
+        while(fgets(auxS, 80, arq) != NULL) {
+			InsereL(pProgram);
+			// printf("%s", auxS);
+
+            if(strlen(auxS) == 1 && auxS[0] == '\n') {
+                strcpy(token, "fim-def");
+                CriaT(&nova, token);
+                InsereT(pProgram, nova);
+            } 
+			else {
+				for(i = 0; i < strlen(auxS); i++) {
+					// Se o caractere atual for um caractere especial, armazena-o como token separado
+					if(auxS[i] == '(' || auxS[i] == ')' || auxS[i] == ',' || auxS[i] == '=' || auxS[i] == '\"' || auxS[i] == '\'') {
+						token[0] = auxS[i];  // Armazena o caractere especial
+						token[1] = '\0';      // Marca o fim da string do token
+						CriaT(&nova, token);  // Cria o token
+						InsereT(pProgram, nova);  // Insere o token na lista
+					} 
+					// Se for uma palavra ou n√∫mero
+					else if(auxS[i] != ' ' && auxS[i] != '\n') {
+						for(j = 0; auxS[i] != ' ' && auxS[i] != '\n' && auxS[i] != '(' && auxS[i] != ')' && auxS[i] != ',' && auxS[i] != '=' && auxS[i] != '\"' && auxS[i] != '\''; j++, i++) {
+							token[j] = auxS[i];  // Copia o token
+						}
+						token[j] = '\0';  // Finaliza o token
+						CriaT(&nova, token);
+						InsereT(pProgram, nova);
+
+						i--;  // Volta uma posi√ß√£o para n√£o pular um caractere ap√≥s o token especial
+					}
+					
+					// Verifica se o √∫ltimo caractere √© uma aspa fechando
+					if (i == strlen(auxS) - 1 && (auxS[i] == '\"' || auxS[i] == '\'')) {
+						token[0] = auxS[i];
+						token[1] = '\0';
+						CriaT(&nova, token);
+						InsereT(pProgram, nova);
+					}
+				}
+			}
+        }
+    }
+    fclose(arq);
+}
+
+void exibe(TpLista *lista) {
+	TpLista *auxL = lista;
+	TpCode *auxT;
+
+	while(auxL != NULL) {
+		auxT = auxL->tokens;
+		while(auxT != NULL) {
+			printf("%s ", auxT->token);
+			auxT = auxT->prox;
+		}
+		printf("\n");
+		auxL = auxL->prox;
+	}
+}
+
+// Fun√ß√£o para identificar se existe uma equa√ß√£o
+int identificar_equacao(TpCode *atual, PilhaM *pilha) {
+    PilhaM *auxP = pilha;
+    int contParenteses = 0;
+    
+    if(strcmp(atual->token, "\"") == 0) // se for uma string
+        return 0;
+
+    if(strcmp(atual->token, "(") == 0) { // se for um parenteses
+        contParenteses++;
+        if(isOperation(atual->prox->token)) // se o pr√≥ximo token for uma opera√ß√£o
+            return 0;
+    }
+    if(strcmp(atual->token, ")") == 0) { // se for um parenteses
+        contParenteses--;
+
+        if(!isOperation(atual->prox->token) || atual->prox != NULL) // se o pr√≥ximo token n√£o for uma opera√ß√£o ou termina com null
+            return 0;
+    }
+    if(isOperation(atual->token)) { // se for uma opera√ß√£o
+        if(strcmp(atual->prox->token, "(") != 0 || isOperation(atual->prox->token)) // se o pr√≥ximo token n√£o for um parenteses ou for uma opera√ß√£o
+            return 0;
+    }
+    else { // se for uma vari√°vel
+        if(!isOperation(atual->prox->token) || atual->prox != NULL) // se o pr√≥ximo token n√£o for uma opera√ß√£o ou termina com null
+            return 0;
+        
+        else {
+            if(!isNumber(atual->token)) { // se n√£o for um n√∫mero
+                while(auxP != NULL && strcmp(auxP->ident.variavel, atual->token) != 0) {
+                    auxP = auxP->prox;
+                }
+                if(auxP == NULL) // se n√£o encontrar a vari√°vel
+                    return 0;
+            }
+        }
+
     }
 }
 
-// FunÁ„o para remover o nÛ da frente da fila
-void dequeueFila(Fila *fila) {
-    if (isEmptyFila(fila)) {
-        printf("Fila est· vazia\n");
-        return;
-    }
-    FilaNode *temp = fila->frente;
-    fila->frente = fila->frente->prox;
-    if (fila->frente == NULL) {
-        fila->tras = NULL;
-    }
-    free(temp);
+
+//Funcao ListaGen para resolver expressoes aritmeticas
+
+// float resolve(char equacao[100]) {
+//     float result;
+    
+//     //construir a ListaGen com todas a expressao aritmetica
+//     Pilha *p;
+//     ListaGen *L = NULL, *atual;
+//     Fila *f;
+
+//     TpTermo *lista = separa(equacao);
+    
+//     init(&p);
+//     initF(&f);
+
+//     while(lista != NULL) {
+//         if(L == NULL)
+//             L = atual = CriaNo(lista->termo);
+
+//         else {
+//             if(strcmp(lista->termo, "(") == 0) {
+//                 atual->cauda = CriaNo("0");
+//                 atual = atual->cauda;
+//                 lista = lista->prox;
+//                 push(&p, atual);
+
+//                 atual->cabeca = CriaNo(lista->termo);
+//                 atual = atual->cabeca;
+//             }
+//             else
+//                 if(strcmp(lista->termo,")") == 0)
+//                     pop(&p, &atual);
+
+//                 else {
+//                     atual->cauda = CriaNo(lista->termo);
+//                     atual = atual->cabeca;
+//                 }
+// 		}
+//         lista = lista->prox;
+//     }
+
+//     //resolvendo a expressao
+//     push(&p, L);
+//     enqueue(&f, L);
+    
+//     while(!isEmpty(f)) {
+//         dequeue(&f, &atual);
+        
+//         while(!Nula(atual)) {
+//             if(atual->cabeca != NULL) {
+//                 push(&p, atual->cabeca);
+//                 enqueue(&f, atual->cabeca);
+//             }   
+//             atual = atual->cauda;
+//         }
+//     }
+
+//     while(!isEmpty(p)) {
+//         pop(&p, &atual);
+//         if(atual != L)
+//             atual->info.valor = calcula(atual->cabeca);
+
+//         else 
+//             result = calcula(atual);
+//     }
+//     return result;
+// }
+
+void mostrarPilhaMem(PilhaM *pilhaM) {
+	PilhaM *aux = pilhaM;
+	printf("\n");
+
+	while(aux != NULL) {
+		if(aux->terminal == 'V') 
+			printf("%s = %s\n", aux->ident.variavel, aux->valor);
+
+		aux = aux->prox;
+	}
 }
 
-// FunÁ„o para ler o programa e armazenar as vari·veis na pilha
-void processaPrograma(char *programa[], int tamanho) {
-    PilhaM *pilha;
-    Fila fila;
-    initPilha(&pilha);
-    initFila(&fila);
+// Armazenando as vari√°veis e seus valores na mem√≥ria
+void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
+	TpCode *auxT = token;
+    PilhaM *auxP = *pilhaM;
 
-    for (int i = 0; i < tamanho; i++) {
-        if (strstr(programa[i], "var") != NULL) {
-            char variavel[10];
-            float valor;
-            sscanf(programa[i], "var %s = %f", variavel, &valor);
-            pushPilha(&pilha, variavel, valor);
-        } else if (strstr(programa[i], "func") != NULL) {
-            char funcao[20];
-            sscanf(programa[i], "func %s", funcao);
-            enqueueFila(&fila, funcao);
-        } else if (strstr(programa[i], "end-func") != NULL) {
-            // Processar a funÁ„o e retornar o valor
-            // Aqui vocÍ pode adicionar o cÛdigo para calcular o valor da funÁ„o
-            // e armazenar o resultado na vari·vel apropriada
-            dequeueFila(&fila);
+    auxT = auxT->prox;
+
+    while(auxT != NULL) {
+        if(strcmp(auxT->token, "=") == 0) {
+            auxT = auxT->prox;
+
+            if(isNumber(auxT->token)) { // se numero
+                if(auxT->prox == NULL)
+                    pushM(pilhaM, token->token, auxT->token, lista);
+                
+                else { // equacao
+                    if(identificar_equacao(auxT) == 1) {
+                        pushM(pilhaM, token->token, resolve(auxT->token), lista);
+                    }
+                }
+            }
+            else {
+                //procura na pilha de variaveis se existe uma variavel correspontente a auxT->token
+                while(auxP != NULL && strcmp(token->token, auxP->ident.variavel) != 0) {
+                    auxP = auxP->prox;
+                }
+                if(auxT->prox == NULL)
+                    if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+                        pushM(pilhaM, token->token, auxP->valor, lista);
+                    }
+                else { // equacao
+                    if(identificar_equacao(auxT) == 1) {
+                        pushM(pilhaM, token->token, resolve(auxT->token), lista);
+
+                }
+
+                if(strcmp(auxT->token, "\"") == 0) { // se string
+                    auxT = auxT->prox;
+                    pushM(pilhaM, token->token, auxT->token, lista);
+                    auxT = auxT->prox;
+                }
+            }
         }
     }
 }
 
-// FunÁ„o principal para testar o cÛdigo
-int main() {
-    char *programa[] = {
-        "var x = 10",
-        "var y = 20",
-        "func soma",
-        "var z = x + y",
-        "end-func",
-        "var resultado = soma"
-    };
-    int tamanho = sizeof(programa) / sizeof(programa[0]);
+TpFrase *criaFrase(char token[15]) {
+	TpFrase *nova = (TpFrase*)malloc(sizeof(TpFrase));
+	strcpy(nova->frase, token);
+	nova->prox = NULL;
 
-    processaPrograma(programa, tamanho);
+	return nova;
+}
 
-    return 0;
+void print(TpCode *token, PilhaM *pilhaM) {
+	TpCode *auxT = token;
+	TpFrase *frase = NULL, *auxFrase;
+	PilhaM *auxP = pilhaM;
+
+	auxT = auxT->prox->prox; // pula o '('
+	
+	if(strcmp(auxT->token, "\"") == 0) {
+		auxT = auxT->prox;
+
+		while(strcmp(auxT->token, "\"") != 0) { 
+			if(frase == NULL) { // se a frase nao tiver elemento
+				frase = criaFrase(auxT->token);
+				auxFrase = frase;
+			}	
+
+			else { // se a frase tiver elementos
+				auxFrase->prox = criaFrase(auxT->token);
+				auxFrase = auxFrase->prox;
+			}
+			auxT = auxT->prox;
+		}
+		auxT = auxT->prox; // depois do "
+		auxFrase = frase;
+
+		if(strcmp(auxT->token, "%") == 0) {	 // se tiver %s, %d, %f
+			while(auxFrase != NULL) {
+				if(auxFrase->frase[0] == '%') // print("%d" % 10)
+					auxT = auxT->prox;
+
+				if(strcmp(auxT->token, "(") == 0)  // print("%d %d" % (10, 20))
+					auxT = auxT->prox;
+				
+				if(isNumber(auxT->token)) {	// print("%d %d" % (10, 20))				
+					strcpy(auxFrase->frase, auxT->token);
+					auxT = auxT->prox;
+				}
+				if(!isNumber(auxT->token)) { 			
+					if(strcmp(auxT->token, "\"") == 0) { // print("%s %d" % ("teste", 20))
+						auxT = auxT->prox;
+						strcpy(auxFrase->frase, auxT->token);
+						auxT = auxT->prox->prox; // pula o fecha "
+					}
+					else { //variavel?
+						auxP = pilhaM;
+						while(auxP != NULL) {
+							if(auxP->terminal == 'V') {
+								if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+									strcpy(auxFrase->frase, auxP->valor);
+									auxT = auxT->prox;
+								}
+								auxP = auxP->prox;
+							}
+						}
+					}
+				}
+				auxFrase = auxFrase->prox;				
+			}
+		}
+		else {
+			if(strcmp(auxT->token, "+") == 0) {
+				auxT=auxT->prox;
+				
+				while(auxFrase->prox != NULL) {
+					auxFrase = auxFrase->prox;
+				}
+				if(strcmp(auxT->token, "(") == 0)
+					auxT = auxT->prox;
+
+				if(strcmp(auxT->token, "\"") == 0) {
+					auxT = auxT->prox;
+					auxFrase->prox = criaFrase(auxT->token);
+					auxT = auxT->prox;
+				}
+				else {
+					if(!isNumber(auxT->token)) {
+						auxP = pilhaM;
+
+						while(auxP != NULL) {
+							if(auxP->terminal == 'V') {
+								if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+									auxFrase->prox = criaFrase(auxP->valor);
+									auxT = auxT->prox;
+								}
+								auxP = auxP->prox;
+							}
+						}
+					}
+				}
+			}
+		}
+		auxFrase = frase;
+		while(auxFrase != NULL) {
+			printf("%s ", auxFrase->frase);
+			auxFrase = auxFrase->prox;
+		}
+	}
+}
+
+void verifCond(TpCode *token, PilhaM *pilhaM) {
+	TpCode *auxT = token;
+	PilhaM *auxP = pilhaM;
+	int verdade[10], i = 0, f = 0;
+	char cond[10];
+
+	auxT = auxT->prox; // pula o if
+	while(strcmp(auxT->token, ":") != 0) {
+		// Tudo isso se for uma variavel, mas se for uma string ou um numero?
+		while(auxP != NULL && strcmp(auxT->token, auxP->ident.variavel) != 0) { // enquanto nao acha a variavel na pilha de variaveis
+			auxP = auxP->prox;
+		}
+		if(auxP != NULL) {
+			auxT = auxT->prox; // pula a variavel
+			if(strcmp(auxT->token, "==") == 0) {
+				auxT = auxT->prox; // pula o ==
+				if(isNumber(auxT->token)) { // se compara auxP->valor com um token
+					if(auxP->valor == auxT->token)
+						verdade[i] = 1;
+
+					else
+						verdade[i] = 0;
+					i++;
+				}
+				else //se for variavel
+				{
+				}
+				//Colocar para v√°riavel dps
+			}
+			else {
+				if (strcmp(auxT->token, "!=") == 0) {
+					auxT = auxT->prox; // pula o !=
+
+					if(isNumber(auxT->token)) {
+						if(auxP->valor != auxT->token)
+							verdade[i] = 1;
+
+						else
+							verdade[i] = 0;
+						i++;
+					}
+					//Colocar para v√°riavel dps
+				}
+				else{
+					if (strcmp(auxT->token, ">") == 0) {
+						auxT = auxT->prox; // pula o >
+
+						if(isNumber(auxT->token)) {
+							if(auxP->valor > auxT->token)
+								verdade[i] = 1;
+
+							else
+								verdade[i] = 0;
+							i++;
+						}
+						//Colocar para v√°riavel dps
+					}
+					else {
+						if(strcmp(auxT->token, "<") == 0) {
+							auxT = auxT->prox; // pula o <
+
+							if(isNumber(auxT->token)) {
+								if(auxP->valor < auxT->token)
+									verdade[i] = 1;
+
+								else
+									verdade[i] = 0;
+								i++;
+							}
+							//Colocar para v√°riavel dps
+						}
+						else {
+							if (strcmp(auxT->token, ">=") == 0) {
+								auxT = auxT->prox; // pula o >=
+								if(isNumber(auxT->token)){
+									if(auxP->valor >= auxT->token)
+										verdade[i] = 1;
+
+									else
+										verdade[i] = 0;
+									i++;
+								}
+								//Colocar para v√°riavel dps
+							}
+							else {
+								if (strcmp(auxT->token, "<=") == 0) {
+									auxT = auxT->prox; // pula o <=
+
+									if(isNumber(auxT->token)) {
+										if(auxP->valor <= auxT->token)
+											verdade[i] = 1;
+
+										else
+											verdade[i] = 0;
+										i++;
+									}
+									//Colocar para v√°riavel dps
+								}
+							}
+						}
+					}
+				}
+			}
+			auxT = auxT->prox; // pula o valor
+			if(strcmp(auxT->token, "and") == 0) {
+				cond[f++] = '&';
+				auxT = auxT->prox; // pula o and
+			}
+			else {
+				if(strcmp(auxT->token, "or") == 0) {
+					cond[f++] = '|';
+					auxT = auxT->prox; // pula o or
+				}
+				else {
+					if(strcmp(auxT->token, "not") == 0) {
+						cond[f++] = '!';
+						auxT = auxT->prox; // pula o not
+					}
+				}
+			}
+		}
+	}
+}
+
+void verIF(TpCode *token, PilhaM *pilhaM){
+	verifCond(token, pilhaM);
+
+}
+
+void verWHILE(TpCode *token, PilhaM *pilhaM, TpLista *lista){
+	verifCond(token, pilhaM);
+
+}
+
+void compilar(TpLista *pProgram , PilhaM **pilhaM) {
+	TpLista *auxL = pProgram;
+	TpCode *auxT, auxT2;
+
+	initM(&(*pilhaM));
+
+	while(auxL != NULL)
+	{
+		auxT = auxL->tokens;
+
+		if(strcmp(auxT->token, "def") == 0) { //se for uma funcao pula para o fim da funcao
+			while(strcmp(auxT->token, "fim-def") != 0) {
+				auxL = auxL->prox;
+				auxT = auxL->tokens;
+			}
+		}
+		else {
+			if(strcmp(auxT->token, "print") == 0) {
+				print(auxT, *pilhaM);
+			}
+			else {
+				if(strcmp(auxT->token, "if") == 0)
+				{
+					// verIF(auxT, *pilhaM);
+				}
+				else{
+					if(strcmp(auxT->token, "while") == 0)
+					{
+						// verWHILE(auxT, *pilhaM, auxL);
+					}
+					else {
+						armazenaMemoria(auxT, &(*pilhaM), auxL);
+					}
+				}
+			}
+			
+		}
+		auxL = auxL->prox;
+	}
 }
