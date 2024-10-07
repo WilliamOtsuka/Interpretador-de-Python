@@ -228,6 +228,7 @@ ListaGen *CriaNo(char termo[]) {
         novo->terminal = 'F';
         strcpy(novo->info.funcao, termo);
     } 
+	novo->cabeca = novo->cauda = NULL;
     return novo;
 }
 
@@ -499,6 +500,8 @@ void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
         } 
 
 		if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
+
+
 			auxT = auxT->prox; // move para o próximo token que deve ser o valor
 
 			if(auxT->prox == NULL)
@@ -551,13 +554,13 @@ void print(TpCode *token, PilhaM *pilhaM) {
 	if(strcmp(auxT->token, "\"") == 0) {
 		auxT = auxT->prox;
 
-		while(strcmp(auxT->token, "\"") != 0) {
-			if(frase == NULL) {
+		while(strcmp(auxT->token, "\"") != 0) { 
+			if(frase == NULL) { // se a frase nao tiver elemento
 				frase = criaFrase(auxT->token);
 				auxFrase = frase;
 			}	
 
-			else {
+			else { // se a frase tiver elementos
 				auxFrase->prox = criaFrase(auxT->token);
 				auxFrase = auxFrase->prox;
 			}
@@ -578,7 +581,7 @@ void print(TpCode *token, PilhaM *pilhaM) {
 					strcpy(auxFrase->frase, auxT->token);
 					auxT = auxT->prox;
 				}
-				if(!isNumber(auxT->token)) { 
+				if(!isNumber(auxT->token)) { 			
 					if(strcmp(auxT->token, "\"") == 0) { // print("%s %d" % ("teste", 20))
 						auxT = auxT->prox;
 						strcpy(auxFrase->frase, auxT->token);
@@ -600,77 +603,81 @@ void print(TpCode *token, PilhaM *pilhaM) {
 				auxFrase = auxFrase->prox;				
 			}
 		}
+		else {
+			if(strcmp(auxT->token, "+") == 0) {
+				auxT=auxT->prox;
+				
+				while(auxFrase->prox != NULL) {
+					auxFrase = auxFrase->prox;
+				}
+				if(strcmp(auxT->token, "(") == 0)
+					auxT = auxT->prox;
+
+				if(strcmp(auxT->token, "\"") == 0) {
+					auxT = auxT->prox;
+					auxFrase->prox = criaFrase(auxT->token);
+					auxT = auxT->prox;
+				}
+				else {
+					if(!isNumber(auxT->token)) {
+						auxP = pilhaM;
+
+						while(auxP != NULL) {
+							if(auxP->terminal == 'V') {
+								if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+									auxFrase->prox = criaFrase(auxP->valor);
+									auxT = auxT->prox;
+								}
+								auxP = auxP->prox;
+							}
+						}
+					}
+				}
+			}
+		}
 		auxFrase = frase;
 		while(auxFrase != NULL) {
 			printf("%s ", auxFrase->frase);
 			auxFrase = auxFrase->prox;
 		}
 	}
-	else
-	{
-		if(strcmp(auxT->token, "+") == 0) {
-			auxT=auxT->prox;
-			while(auxFrase->prox != NULL) {
-				auxFrase = auxFrase->prox;
-			}
-			if(strcmp(auxT->token, "(") == 0)
-					auxT = auxT->prox;
-			if(strcmp(auxT->token, "\"") == 0){
-				auxT = auxT->prox;
-				auxFrase->prox = criaFrase(auxT->token);
-				auxT = auxT->prox;
-			}
-			else{
-				if(!isNumber(auxT->token)){
-					auxP = pilhaM;
-					while(auxP != NULL) {
-						if(auxP->terminal == 'V') {
-							if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
-								auxFrase->prox = criaFrase(auxP->valor);
-								auxT = auxT->prox;
-							}
-							auxP = auxP->prox;
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
-
-void verIF(TpCode *token, PilhaM *pilhaM){
+void verifCond(TpCode *token, PilhaM *pilhaM) {
 	TpCode *auxT = token;
 	PilhaM *auxP = pilhaM;
-	int verdade[10],i=0;
+	int verdade[10], i = 0, f = 0;
 	char cond[10];
 
-
 	auxT = auxT->prox; // pula o if
-	while(auxT->token != ":") {
-		while(auxP!=NULL && auxT->token != pilhaM->ident.variavel) {
+	while(strcmp(auxT->token, ":") != 0) {
+		// Tudo isso se for uma variavel, mas se for uma string ou um numero?
+		while(auxP != NULL && strcmp(auxT->token, auxP->ident.variavel) != 0) { // enquanto nao acha a variavel na pilha de variaveis
 			auxP = auxP->prox;
 		}
-		if(auxP!=NULL)
-		{
+		if(auxP != NULL) {
 			auxT = auxT->prox; // pula a variavel
-			if(strcmp(auxT->token, "==")==0){
+			if(strcmp(auxT->token, "==") == 0) {
 				auxT = auxT->prox; // pula o ==
-				if(isNumber(auxT->token)){
+				if(isNumber(auxT->token)) { // se compara auxP->valor com um token
 					if(auxP->valor == auxT->token)
 						verdade[i] = 1;
+
 					else
 						verdade[i] = 0;
 					i++;
 				}
+				else //se for variavel
 				//Colocar para váriavel dps
 			}
-			else{
-				if (strcmp(auxT->token, "!=")==0){
+			else {
+				if (strcmp(auxT->token, "!=") == 0) {
 					auxT = auxT->prox; // pula o !=
-					if(isNumber(auxT->token)){
+
+					if(isNumber(auxT->token)) {
 						if(auxP->valor != auxT->token)
 							verdade[i] = 1;
+
 						else
 							verdade[i] = 0;
 						i++;
@@ -678,47 +685,54 @@ void verIF(TpCode *token, PilhaM *pilhaM){
 					//Colocar para váriavel dps
 				}
 				else{
-					if (strcmp(auxT->token, ">")==0){
+					if (strcmp(auxT->token, ">") == 0) {
 						auxT = auxT->prox; // pula o >
-						if(isNumber(auxT->token)){
+
+						if(isNumber(auxT->token)) {
 							if(auxP->valor > auxT->token)
 								verdade[i] = 1;
+
 							else
 								verdade[i] = 0;
 							i++;
 						}
 						//Colocar para váriavel dps
 					}
-					else{
-						if (strcmp(auxT->token, "<")==0){
+					else {
+						if(strcmp(auxT->token, "<") == 0) {
 							auxT = auxT->prox; // pula o <
-							if(isNumber(auxT->token)){
+
+							if(isNumber(auxT->token)) {
 								if(auxP->valor < auxT->token)
 									verdade[i] = 1;
+
 								else
 									verdade[i] = 0;
 								i++;
 							}
 							//Colocar para váriavel dps
 						}
-						else{
-							if (strcmp(auxT->token, ">=")==0){
+						else {
+							if (strcmp(auxT->token, ">=") == 0) {
 								auxT = auxT->prox; // pula o >=
 								if(isNumber(auxT->token)){
 									if(auxP->valor >= auxT->token)
 										verdade[i] = 1;
+
 									else
 										verdade[i] = 0;
 									i++;
 								}
 								//Colocar para váriavel dps
 							}
-							else{
-								if (strcmp(auxT->token, "<=")==0){
+							else {
+								if (strcmp(auxT->token, "<=") == 0) {
 									auxT = auxT->prox; // pula o <=
-									if(isNumber(auxT->token)){
+
+									if(isNumber(auxT->token)) {
 										if(auxP->valor <= auxT->token)
 											verdade[i] = 1;
+
 										else
 											verdade[i] = 0;
 										i++;
@@ -731,28 +745,33 @@ void verIF(TpCode *token, PilhaM *pilhaM){
 				}
 			}
 			auxT = auxT->prox; // pula o valor
-			if(strcmp(auxT->token, "and")==0){
-				cond[f]='&';
+			if(strcmp(auxT->token, "and") == 0) {
+				cond[f++] = '&';
 				auxT = auxT->prox; // pula o and
 			}
-			else{
-				if(strcmp(auxT->token, "or")==0){
-					cond[f]='|';
+			else {
+				if(strcmp(auxT->token, "or") == 0) {
+					cond[f++] = '|';
 					auxT = auxT->prox; // pula o or
 				}
-				else{
-					if(strcmp(auxT->token, "not")==0){
-						cond[f]='!';
+				else {
+					if(strcmp(auxT->token, "not") == 0) {
+						cond[f++] = '!';
 						auxT = auxT->prox; // pula o not
 					}
 				}
 			}
 		}
-
 	}
 }
 
-void verWHILE(TpCode *token, PilhaM *pilhaM){
+void verIF(TpCode *token, PilhaM *pilhaM){
+	verifCond(token, pilhaM);
+
+}
+
+void verWHILE(TpCode *token, PilhaM *pilhaM, TpLista *lista){
+	verifCond(token, pilhaM);
 
 }
 
@@ -779,15 +798,16 @@ void compilar(TpLista *pProgram , PilhaM **pilhaM) {
 			else {
 				if(strcmp(auxT->token, "if") == 0)
 				{
-					verIF(auxT, *pilhaM);
+					// verIF(auxT, *pilhaM);
 				}
 				else{
 					if(strcmp(auxT->token, "while") == 0)
 					{
-						verWHILE(auxT, *pilhaM);
+						// verWHILE(auxT, *pilhaM, auxL);
 					}
-					else
+					else {
 						armazenaMemoria(auxT, &(*pilhaM), auxL);
+					}
 				}
 			}
 			

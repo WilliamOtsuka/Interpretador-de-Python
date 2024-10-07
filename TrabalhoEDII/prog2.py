@@ -1,3 +1,5 @@
-x = 5
-s = "teste"
-print("Teste1" + (s))
+a = 2 + 3 * (5 - (2 / 3) + 3)
+b = 3
+
+
+print("%d" % a + b)
