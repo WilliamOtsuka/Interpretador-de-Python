@@ -5,14 +5,15 @@
 #include <conio.h>
 #include <ctype.h> 
 
-#include "TADTrab.h"
+//#include "TADTrab.h"
+#include "teste.h"
 
 int main(){
     TpLista *pProgram = NULL;
     PilhaM *pilhaM = NULL;
 
     CarregaL(&pProgram);
-    exibe(pProgram);
+//    exibe(pProgram);
     
     compilar(pProgram, &pilhaM);
     

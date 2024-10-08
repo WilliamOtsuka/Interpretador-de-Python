@@ -1,4 +1,3 @@
-
 struct TpCode {
 	char token[15];
 	struct TpCode *prox;
@@ -84,7 +83,7 @@ void pop(Pilha **p, ListaGen **info) {
 	free(aux);
 }
 
-char isEmpty(Pilha *p) {
+char isEmptyP(Pilha *p) {
 	return p == NULL;
 }
 
@@ -176,7 +175,7 @@ void dequeue (Fila **f, ListaGen **info){
 	free(aux);
 }
 
-char IsEmptyF(Fila *f){
+char isEmpty(Fila *f){
 	return f == NULL;
 }
 
@@ -184,11 +183,11 @@ char IsEmptyF(Fila *f){
 
 int isNumber(char termo[]) {
     int i = 0;
-    int decimalPointCount = 0; 
+    int decimalPointCount = 0; // Contador para pontos decimais
 
-    // Verificar se o primeiro caractere é um sinal de negativo
+    // Verifica se o primeiro caractere é um sinal de menos
     if (termo[0] == '-') {
-        i = 1;
+        i = 1; // Começa a verificação a partir do segundo caractere
     }
 
     for (; termo[i] != '\0'; i++) { // Percorre cada caractere da string até o caractere nulo
@@ -204,8 +203,7 @@ int isNumber(char termo[]) {
         }
     }
 
-    // Se todos os caracteres forem válidos, retorna 1
-    return 1;
+    return 1; // Se todos os caracteres forem válidos
 }
 
 int isOperation(char termo[]) {
@@ -218,6 +216,15 @@ int isOperation(char termo[]) {
 int isFunction(char termo[]) {
     return (strcmp(termo, "math.sqrt") == 0 || strcmp(termo, "math.fabs") == 0);
 }
+
+TpTermo *CriaTermo(char termo[]) {
+	TpTermo *novo = (TpTermo*)malloc(sizeof(TpTermo));
+	strcpy(novo->termo, termo);
+	novo->prox = NULL;
+
+	return novo;
+}
+
 
 ListaGen *CriaNo(char termo[]) {
     ListaGen *novo = (ListaGen*)malloc(sizeof(ListaGen));
@@ -239,12 +246,19 @@ ListaGen *CriaNo(char termo[]) {
     return novo;
 }
 
+char Nula(ListaGen *L) {
+	return L == NULL;
+}
+
+
+
 void CriaL (TpLista **nova) {
 	*nova = (TpLista*)malloc(sizeof(TpLista));
 	(*nova)->ant = NULL;
 	(*nova)->prox = NULL;
 	(*nova)->tokens = NULL;
 }
+
 
 void InsereL(TpLista **pProgram) {
 	TpLista *aux, *nova;
@@ -300,40 +314,6 @@ char VerifVazia(TpLista *pProgram) {
 	else
 		return 0;
 }
-
-// void CarregaL(TpLista **pProgram) {
-// 	FILE *arq;
-// 	int i, j;
-// 	char token[15], nome[15], auxS[50];
-// 	TpCode *nova;
-// 	printf("Digite o nome do arquivo: ");
-// 	scanf("%s", nome);
-// 	arq = fopen(nome, "r");
-
-// 	if(arq == NULL)
-// 	{
-// 		printf("Erro ao abrir o arquivo\n");
-// 	}
-// 	else
-// 	{
-// 		while(!feof(arq))
-// 		{
-// 			fgets(auxS, 50, arq);
-// 			InsereL(&pProgram);
-// 			for(i = 0; i < strlen(auxS); i++)
-// 			{
-// 				for(j = 0; auxS[i] != ' ' && auxS[i] != '\n'; j++, i++)
-// 				{
-// 					token[j] = auxS[i];
-// 				}
-// 				token[j] = '\0';
-// 				CriaT(&nova, token);
-// 				InsereT(pProgram, nova);
-// 			}
-// 		}
-// 	}
-// 	fclose(arq);
-// }
 
 void CarregaL(TpLista **pProgram) {
     FILE *arq;
@@ -408,126 +388,211 @@ void exibe(TpLista *lista) {
 }
 
 // Função para identificar se existe uma equação
-int identificar_equacao(TpCode *lista) {
-    TpCode *atual = lista;
-    
-    int encontrou_operando = 0;
-    int encontrou_operador = 0;
-    int parenteses_abertos = 0;
-    
-    while (atual != NULL) {
-		if(strcmp(atual->token, "\"") == 0)
-			return -1;
+int identificar_equacao(TpCode *atual, PilhaM *pilha) {
+    PilhaM *auxP;
+    int contParenteses = 0;
 
-        if (strcmp(atual->token, "(") == 0) {
-            // Incrementa contagem de parênteses abertos
-            parenteses_abertos++;
-        } 
-		else 
-			if (strcmp(atual->token, ")") == 0) {
-            // Decrementa contagem de parênteses abertos
-            parenteses_abertos--;
+	while(atual != NULL) {
+		auxP = pilha;
+		if(strcmp(atual->token, "\"") == 0) // se for uma string
+			return 0;
 
-            if (parenteses_abertos < 0) {
-                // Há mais parênteses fechando do que abrindo
-                return -1;  // Indica erro de parênteses incorretos
-            }
-        } 
-		else 
-			if (isNumber(atual->token)) {
-            encontrou_operando = 1;
-        	} 
-			else 
-				if (isOperation(atual->token)) {
-					if (encontrou_operando) {
-                		encontrou_operador = 1;
-            		}
-        		}
-        atual = atual->prox;
-    }
-    
-    // Verifica se todos os parênteses foram fechados corretamente
-    if (parenteses_abertos != 0) {
-        return -1;  // Indica erro de parênteses incorretos
-    }
-    if(encontrou_operando && encontrou_operador && parenteses_abertos == 0)
-		return 1;  // Identificou uma equação
+		if(strcmp(atual->token, "(") == 0) { // se for um parenteses
+			contParenteses++;
+			
+			if(isOperation(atual->prox->token)) // se o próximo token for uma operação
+				return 0;
+		}
+		if(strcmp(atual->token, ")") == 0) { // se for um parenteses
+			contParenteses--;
 
-    return -1;  // Não identificou uma equação
+			if(atual->prox != NULL) {
+				if(strcmp(atual->prox->token, ")") != 0) { // se o próximo token não for um parenteses
+					if(!isOperation(atual->prox->token)) // se o próximo token for uma operação
+						return 0;
+				}
+			}
+		}
+		if(isOperation(atual->token)) { // se for uma operação
+			if(strcmp(atual->prox->token, "(") != 0) { // se o próximo token não for um parenteses
+				if(isOperation(atual->prox->token)) // se o próximo token for uma operação
+					return 0;
+			}
+		}
+		else { // se for um numero ou uma variavel
+			if(atual->prox != NULL && !isOperation(atual->prox->token)) { // se o próximo token não for uma operação ou termina com null
+				if(strcmp(atual->token, "(") != 0 && strcmp(atual->prox->token, ")") != 0) { // se não for parenteses
+					if(atual->prox != NULL)
+						return 0;
+				}
+			}
+			else { // se for variavel
+				if(!isNumber(atual->token)) {
+					if(strcmp(atual->token, "(") != 0 && strcmp(atual->token, ")") != 0) { // se não for parenteses
+						while(auxP != NULL && strcmp(auxP->ident.variavel, atual->token) != 0) {
+							auxP = auxP->prox;
+						}
+						if(auxP == NULL) // se não encontrar a variável
+							return 0;
+					}
+				}
+			}
+		}
+		atual = atual->prox;
+	}
+	if(contParenteses != 0) // se o contador de parenteses for diferente de 0
+		return 0;
+
+	return 1;
 }
 
 
+TpTermo *separa(char equacao[100], PilhaM *pilhaM) {
+	TpTermo *lista = NULL, *atual;
+	char termo[15];
+	int i = 0, j = 0;
+
+	while(equacao[i] != '\0') {
+		if(equacao[i] == ' ') {
+			termo[j] = '\0';
+			if(lista == NULL) {
+				lista = CriaTermo(termo);
+				atual = lista;
+			}
+			else {
+				atual->prox = CriaTermo(termo);
+				atual = atual->prox;
+			}
+			j = 0;
+		}
+		else {
+			termo[j] = equacao[i];
+			j++;
+		}
+		i++;
+	}
+}
+
+float calcula(ListaGen *L) {
+	float resultado = 0;
+	ListaGen *atual = L;
+
+	// Percorre a lista de nÃ³s
+	while (atual != NULL) {
+		if (atual->terminal == 'V') { // Se o nÃ³ Ã© um valor
+			resultado = atual->info.valor; // Armazena o valor
+		} else if (atual->terminal == 'O') { // Se o nÃ³ Ã© uma operaÃ§Ã£o
+			float esquerda = resultado; // Calcula o valor do operando esquerdo
+			float direita = calcula(atual->cauda); // Calcula o valor do operando direito
+			if (strcmp(atual->info.operacao, "+") == 0) {
+				resultado = esquerda + direita;
+			} else if (strcmp(atual->info.operacao, "-") == 0) {
+				resultado = esquerda - direita;
+			} else if (strcmp(atual->info.operacao, "*") == 0) {
+				resultado = esquerda * direita;
+			} else if (strcmp(atual->info.operacao, "/") == 0) {
+				resultado = esquerda / direita;
+			} else if (strcmp(atual->info.operacao, "//") == 0) {
+				resultado = (int)esquerda / (int)direita;
+			} else if (strcmp(atual->info.operacao, "**") == 0) {
+				resultado = pow(esquerda, direita);
+			} else if (strcmp(atual->info.operacao, "%") == 0) {
+				resultado = fmod(esquerda, direita);
+			}
+		} else if (atual->terminal == 'F') { // Se o nÃ³ Ã© uma funÃ§Ã£o
+			if (strcmp(atual->info.funcao, "math.sqrt") == 0) {
+				resultado = sqrt(calcula(atual->cabeca));
+			} else if (strcmp(atual->info.funcao, "math.fabs") == 0) {
+				resultado = fabs(calcula(atual->cabeca));
+			}
+		}
+		atual = atual->cauda; // Move para o prÃ³ximo nÃ³
+	}
+
+	return resultado; // Retorna o resultado final
+}
+
 //Funcao ListaGen para resolver expressoes aritmeticas
 
-// float resolve(char equacao[100]) {
-//     float result;
+float resolve(char equacao[100], PilhaM *pilhaM) {
+    float result;
     
-//     //construir a ListaGen com todas a expressao aritmetica
-//     Pilha *p;
-//     ListaGen *L = NULL, *atual;
-//     Fila *f;
+    //construir a ListaGen com todas a expressao aritmetica
+    Pilha *p;
+    ListaGen *L = NULL, *atual;
+    Fila *f;
+	TpTermo *aux;
 
-//     TpTermo *lista = separa(equacao);
+    TpTermo *lista = separa(equacao, pilhaM);
+
+	//imprime a lista
+	aux = lista;
+	while(aux != NULL) {
+		printf("%s ", aux->termo);
+		aux = aux->prox;
+	}
+
+    init(&p);
+    initF(&f);
+
+    while(lista != NULL) {
+        if(L == NULL)
+            L = atual = CriaNo(lista->termo);
+
+        else {
+            if(strcmp(lista->termo, "(") == 0) {
+                atual->cauda = CriaNo("0");
+                atual = atual->cauda;
+                lista = lista->prox;
+                push(&p, atual);
+
+                atual->cabeca = CriaNo(lista->termo);
+                atual = atual->cabeca;
+            }
+            else
+                if(strcmp(lista->termo,")") == 0)
+                    pop(&p, &atual);
+
+                else {
+                    atual->cauda = CriaNo(lista->termo);
+                    atual = atual->cabeca;
+                }
+		}
+        lista = lista->prox;
+    }
+
+    //resolvendo a expressao
+    push(&p, L);
+    enqueue(&f, L);
     
-//     init(&p);
-//     initF(&f);
-
-//     while(lista != NULL) {
-//         if(L == NULL)
-//             L = atual = CriaNo(lista->termo);
-
-//         else {
-//             if(strcmp(lista->termo, "(") == 0) {
-//                 atual->cauda = CriaNo("0");
-//                 atual = atual->cauda;
-//                 lista = lista->prox;
-//                 push(&p, atual);
-
-//                 atual->cabeca = CriaNo(lista->termo);
-//                 atual = atual->cabeca;
-//             }
-//             else
-//                 if(strcmp(lista->termo,")") == 0)
-//                     pop(&p, &atual);
-
-//                 else {
-//                     atual->cauda = CriaNo(lista->termo);
-//                     atual = atual->cabeca;
-//                 }
-// 		}
-//         lista = lista->prox;
-//     }
-
-//     //resolvendo a expressao
-//     push(&p, L);
-//     enqueue(&f, L);
-    
-//     while(!isEmpty(f)) {
-//         dequeue(&f, &atual);
+    while(!isEmpty(f)) {
+        dequeue(&f, &atual);
         
-//         while(!Nula(atual)) {
-//             if(atual->cabeca != NULL) {
-//                 push(&p, atual->cabeca);
-//                 enqueue(&f, atual->cabeca);
-//             }   
-//             atual = atual->cauda;
-//         }
-//     }
+        while(!Nula(atual)) {
+            if(atual->cabeca != NULL) {
+                push(&p, atual->cabeca);
+                enqueue(&f, atual->cabeca);
+            }   
+            atual = atual->cauda;
+        }
+    }
 
-//     while(!isEmpty(p)) {
-//         pop(&p, &atual);
-//         if(atual != L)
-//             atual->info.valor = calcula(atual->cabeca);
+    while(!isEmpty(p)) {
+        pop(&p, &atual);
+        if(atual != L)
+            atual->info.valor = calcula(atual->cabeca);
 
-//         else 
-//             result = calcula(atual);
-//     }
-//     return result;
-// }
+        else 
+            result = calcula(atual);
+    }
+
+	printf("\nresultado: %f\n", result);
+    return result;
+}
 
 void mostrarPilhaMem(PilhaM *pilhaM) {
 	PilhaM *aux = pilhaM;
-	printf("\n");
+	printf("\nPILHA:\n");
 
 	while(aux != NULL) {
 		if(aux->terminal == 'V') 
@@ -539,71 +604,71 @@ void mostrarPilhaMem(PilhaM *pilhaM) {
 
 // Armazenando as variáveis e seus valores na memória
 void armazenaMemoria(TpCode *token, PilhaM **pilhaM, TpLista *lista) {
-	PilhaM *pilhaFM = NULL;
-	TpLista *auxL;
-    TpCode *auxT = token;
-    TpVariavel variaveis[10]; // Vetor para armazenar variáveis antes do operador '='
-    int varCount = 0, i;
-	char equacao[100] = "";
+	TpCode *auxT = token;
+    PilhaM *auxP = *pilhaM;
+    
+    float result;
+	char equacao[100], resultado[10];
+    auxT = auxT->prox;
 
-    // Inicializa a primeira variável
-    strcpy(variaveis[varCount++].variavel, token->token);
-
-    while (auxT != NULL && auxT->prox != NULL) { // percorre a lista de tokens
-        auxT = auxT->prox;	
-		
-        if (strcmp(auxT->token, ",") == 0) { // se for uma vírgula
-            auxT = auxT->prox; // move para o próximo token
-            strcpy(variaveis[varCount++].variavel, auxT->token); // Armazena a próxima variável no vetor
-        } 
-
-		if (strcmp(auxT->token, "=") == 0) { // se for uma atribuição
-
-			if(identificar_equacao(auxT) == 1) {
-				// Coloca o auxT dentro da variavel de equacao
-				auxT = auxT->prox;
-				while (auxT != NULL) {
-					strcat(equacao, auxT->token);
-					auxT = auxT->prox;
-				}
-				printf("Equacao: %s\n", equacao);
-				// Resolve a equação
-				// resolve(equacao);
-			}
-			else {
-				auxT = auxT->prox; // move para o próximo token que deve ser o valor
-				if(auxT->prox == NULL)
-					// Armazena o valor nas variáveis encontradas antes do '='
-					for (i = 0; i < varCount; i++) {
-						pushM(&(*pilhaM),variaveis[i].variavel, auxT->token, NULL);
+	if(strcmp(auxT->token, "=") == 0) {
+		auxT = auxT->prox;
+		if(isNumber(auxT->token)) { // se numero
+			if(auxT->prox == NULL)
+				pushM(pilhaM, token->token, auxT->token, lista);
+			
+			else { // equacao
+				if(identificar_equacao(auxT, *pilhaM) == 1) {	
+					while (auxT != NULL) {
+						strcat(equacao, auxT->token);
+						strcat(equacao, " ");
+						auxT = auxT->prox;
 					}
-				// else { // É uma função
-				// 	// Acha a lista ligada ao auxT->token
-				// 	while (lista != NULL) {
-				// 		if (strcmp(lista->tokens->token, auxT->token) == 0) {
-				// 			pilhaFM = lista;
+					// Remover o último espaço adicionado
+					if (strlen(equacao) > 0) {
+						equacao[strlen(equacao) - 1] = '\0';
+					}
+					result = resolve(equacao, *pilhaM);
+					sprintf(resultado, "%f", result);
 
-				// 		}
-				// 		lista = lista->prox;
-				// 	}
-				// 	auxL = lista;
-					
-				// 	while(strcmp(auxT->token, lista->tokens->token) != 0) {
-				// 		auxL = auxL->prox;
-				// 	}
-					
-				// }
-				// Resetar o contador de variáveis
-				// varCount = 0;
-				
-				if(auxT != NULL && strcmp(auxT->token, "\"") == 0) {
-				auxT = auxT->prox;
-				pushM(&(*pilhaM), variaveis[0].variavel, auxT->token, NULL);
-				auxT = auxT->prox;
+					pushM(pilhaM, token->token, resultado, lista);
 				}
 			}
 		}
-    }
+		else {
+			//procura na pilha de variaveis se existe uma variavel correspontente a auxT->token
+			while(auxP != NULL && strcmp(auxT->token, auxP->ident.variavel) != 0) {
+				auxP = auxP->prox;
+			}
+			if(auxT->prox == NULL) {
+				if(strcmp(auxP->ident.variavel, auxT->token) == 0) {
+					pushM(pilhaM, token->token, auxP->valor, lista);
+				}
+			}
+			else { // equacao
+				if(identificar_equacao(auxT, *pilhaM) == 1) {
+					while (auxT != NULL) {
+						strcat(equacao, auxT->token);
+						strcat(equacao, " ");
+						auxT = auxT->prox;
+					}
+					// Remover o último espaço adicionado
+					if (strlen(equacao) > 0) {
+						equacao[strlen(equacao) - 1] = '\0';
+					}
+					result = resolve(equacao, *pilhaM);
+					printf("%f", result);
+					pushM(pilhaM, token->token, resultado, lista);
+				}
+
+				if(auxT != NULL && strcmp(auxT->token, "\"") == 0) { // se string
+					auxT = auxT->prox;
+					pushM(pilhaM, token->token, auxT->token, lista);
+					auxT = auxT->prox;
+				}
+			}
+		}
+	}
 }
 
 TpFrase *criaFrase(char token[15]) {
